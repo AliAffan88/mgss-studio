@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MGSS Studio v3</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <aside id="toolbar">
+      <div class="brand">
+        <strong>MGSS Studio v3</strong>
+        <button id="themeToggle" title="Toggle theme">Toggle Theme</button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Modes</div>
+        <div class="tools">
+          <button id="polyBtn" class="modeBtn active">Polygon Mode</button>
+          <button id="bezierBtn" class="modeBtn">Bezier Mode</button>
+          <button id="selectBtn" class="modeBtn">Select</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Image / Export</div>
+        <label class="file-label">Background Image
+          <input id="uploadImage" type="file" accept="image/*"/>
+        </label>
+        <label class="export-opt"><input id="includeImage" type="checkbox" /> Include image in full export</label>
+        <div style="display:flex;gap:6px;">
+          <button id="exportPowerBI" class="actionBtn">Export (Power BI)</button>
+          <button id="exportFull" class="actionBtn">Export Full</button>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:#666">
+          <input id="autosave" type="checkbox" /> Auto-save project
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Actions</div>
+        <button id="undoBtn">Undo (Ctrl+Z)</button>
+        <button id="redoBtn">Redo (Ctrl+Y)</button>
+        <button id="saveProjectBtn">Save Project (.mgss.json)</button>
+        <input id="loadProjectFile" type="file" accept=".mgss.json" />
+      </div>
+
+      <div class="section small">
+        <div class="section-title">Defaults</div>
+        <div>
+          Default Fill: <input type="color" id="defaultColor" value="#bfbfbf" />
+          Opacity: <input type="range" id="defaultOpacity" min="0" max="1" step="0.05" value="0.3" />
+        </div>
+      </div>
+
+      <div class="section tips">
+        <div class="section-title">Tips</div>
+        <ul>
+          <li>Click to add point. Click+drag to create a curved segment.</li>
+          <li>Double-click or Enter to finish a region.</li>
+          <li>ESC or Backspace removes last point (step undo).</li>
+          <li>Shift+click near edge to insert vertex (edge-hover preview shows dot).</li>
+          <li>Select region → drag handles to edit vertices. Right-click handle to remove vertex.</li>
+        </ul>
+      </div>
+    </aside>
+
+    <main id="main">
+      <div id="canvasWrapper">
+        <svg id="svgCanvas" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </main>
+
+    <aside id="sidepanel">
+      <div class="section">
+        <div class="section-title">Region Properties</div>
+        <label>Region ID</label>
+        <input id="regionID" placeholder="Auto-generated" />
+        <label>Fill Color</label>
+        <input id="fillColor" type="color" />
+        <label>Opacity</label>
+        <input id="fillOpacity" type="range" min="0" max="1" step="0.05" />
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <button id="renameBtn">Apply Rename</button>
+          <button id="centerBtn">Center</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Regions</div>
+        <ul id="regionList"></ul>
+      </div>
+    </aside>
+  </div>
+
+  <!-- scripts -->
+  <script src="undoRedo.js"></script>
+  <script src="projectIO.js"></script>
+  <script src="svgExport.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

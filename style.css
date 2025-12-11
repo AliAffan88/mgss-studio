@@ -1,0 +1,55 @@
+:root{
+  --bg: #eef7ff; /* very light blue background as requested */
+  --panel: #fafafa;
+  --accent: #007acc;
+  --text: #222;
+  --muted: #666;
+}
+[data-theme="dark"] {
+  --bg: #0f1720;
+  --panel: #0b1220;
+  --accent: #3aa0ff;
+  --text: #e6eef8;
+  --muted: #9aa6b2;
+}
+
+* { box-sizing: border-box; }
+html,body,#app { height:100%; margin:0; font-family:Inter,Segoe UI,Arial,sans-serif; color:var(--text); }
+#app { display:flex; height:100vh; overflow:hidden; background:var(--bg); }
+
+/* Toolbar */
+#toolbar { width:300px; background:var(--panel); border-right:1px solid #e6e6e6; padding:12px; overflow:auto; }
+.brand { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.section { margin-bottom:12px; }
+.section-title { font-weight:600; margin-bottom:6px; font-size:13px; color:var(--muted); }
+.tools button, .actionBtn, .modeBtn, #undoBtn, #redoBtn, #saveProjectBtn, #delBtn { padding:8px 10px; margin:4px 0; cursor:pointer; border:1px solid #ddd; background:#fff; }
+.modeBtn.active { background:var(--accent); color:#fff; border:none; }
+.file-label input { display:block; margin-top:6px; }
+.small { font-size:13px; }
+.tips ul { margin:6px 0 0 18px; padding:0; font-size:13px; color:var(--muted); }
+
+/* Canvas */
+#main { flex:1; display:flex; align-items:stretch; justify-content:center; overflow:auto; padding:12px; }
+#canvasWrapper { flex:1; display:flex; align-items:center; justify-content:center; }
+#svgCanvas { width:1200px; height:800px; border:1px solid #dcdcdc; background: linear-gradient(transparent 0, transparent 40px, rgba(0,0,0,0.02) 41px); }
+
+/* Sidepanel */
+#sidepanel { width:320px; background:var(--panel); border-left:1px solid #e6e6e6; padding:12px; overflow:auto; }
+#sidepanel input[type="color"], #sidepanel input[type="range"] { width:100%; margin:6px 0; }
+
+/* Region list */
+#regionList { list-style:none; padding:0; margin:0; max-height:48vh; overflow:auto; border-top:1px solid #eee; }
+#regionList li { padding:8px; border-bottom:1px solid #f2f2f2; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+#regionList li:hover { background:#f7f7f7; }
+
+/* selected highlight */
+polygon.selected, path.selected { stroke:var(--accent) !important; stroke-width:2.6 !important; fill-opacity:0.35 !important; }
+
+/* handles */
+.handle { cursor:move; pointer-events:all; }
+.handle circle { r:6; stroke:#333; stroke-width:1; fill:#fff; }
+
+/* responsive smaller screens */
+@media (max-width:1000px){
+  #toolbar, #sidepanel { display:none; }
+}
