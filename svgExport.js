@@ -1,3 +1,4 @@
+// MGSS SVG EXPORT VERSION: 2025-ALIGNMENT-FIX
 // svgExport.js - Synoptic & Power BI safe SVG export
 // Guarantees 1:1 coordinate alignment between image and regions
 
@@ -60,3 +61,4 @@ function escapeXml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
+
