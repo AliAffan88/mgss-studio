@@ -1,33 +1,62 @@
-// svgExport.js - builds Power BI friendly SVG and full export with optional image
-// Uses the same minimal attributes we require.
+// svgExport.js - Synoptic & Power BI safe SVG export
+// Guarantees 1:1 coordinate alignment between image and regions
 
-function buildCleanSVGFragment(shapes, width, height, bg) {
-  const vbW = bg ? bg.width : width;
-  const vbH = bg ? bg.height : height;
+function buildCleanSVGFragment(items, width, height, includeImageData) {
+  const xmlns = 'http://www.w3.org/2000/svg';
 
-  let svg = [];
-  svg.push(
-    `<svg xmlns="http://www.w3.org/2000/svg"`,
-    `width="${vbW}" height="${vbH}"`,
-    `viewBox="0 0 ${vbW} ${vbH}">`
-  );
+  // Use image natural size as the master coordinate system when included
+  const vbW = includeImageData ? includeImageData.width : width;
+  const vbH = includeImageData ? includeImageData.height : height;
 
-  // background image (fixed coordinates)
-  if (bg) {
-    svg.push(
-      `<image href="${bg.href}" x="0" y="0" width="${vbW}" height="${vbH}" preserveAspectRatio="none"/>`
-    );
+  let svg =
+    `<svg xmlns="${xmlns}" ` +
+    `width="${vbW}" height="${vbH}" ` +
+    `viewBox="0 0 ${vbW} ${vbH}">`;
+
+  // Background image (no scaling drift, Synoptic-safe)
+  if (includeImageData && includeImageData.href) {
+    const href = escapeXml(includeImageData.href);
+    svg +=
+      `<image ` +
+      `id="bgImage" ` +
+      `x="0" y="0" ` +
+      `width="${vbW}" height="${vbH}" ` +
+      `href="${href}" ` +
+      `preserveAspectRatio="none" />`;
   }
 
-  // regions
-  shapes.forEach(s => {
-    let attrs = '';
-    Object.entries(s.attr).forEach(([k,v]) => {
-      attrs += ` ${k}="${v}"`;
-    });
-    svg.push(`<${s.tag} id="${s.id}"${attrs}/>`);
+  // Regions (pure SVG, no transforms, no groups)
+  items.forEach(it => {
+    if (it.tag === 'polygon') {
+      svg +=
+        `<polygon ` +
+        `id="${escapeXml(it.id)}" ` +
+        `points="${escapeXml(it.attr.points)}" ` +
+        `fill="${escapeXml(it.attr.fill)}" ` +
+        `fill-opacity="${it.attr['fill-opacity']}" ` +
+        `stroke="${escapeXml(it.attr.stroke)}" ` +
+        `stroke-width="${it.attr['stroke-width']}" />`;
+    } else if (it.tag === 'path') {
+      svg +=
+        `<path ` +
+        `id="${escapeXml(it.id)}" ` +
+        `d="${escapeXml(it.attr.d)}" ` +
+        `fill="${escapeXml(it.attr.fill)}" ` +
+        `fill-opacity="${it.attr['fill-opacity']}" ` +
+        `stroke="${escapeXml(it.attr.stroke)}" ` +
+        `stroke-width="${it.attr['stroke-width']}" />`;
+    }
   });
 
-  svg.push(`</svg>`);
-  return svg.join('');
+  svg += `</svg>`;
+  return svg;
+}
+
+// XML-safe escaping
+function escapeXml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
