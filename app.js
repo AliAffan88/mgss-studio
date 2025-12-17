@@ -103,64 +103,48 @@ uploadImage.addEventListener('change', (ev) => {
   const reader = new FileReader();
   reader.onload = function(e) {
     const href = e.target.result;
-    loadBackgroundFromData(href, canvas.clientWidth, canvas.clientHeight, true);
+    const tempImg = new Image();
+    tempImg.onload = () => {
+    loadBackgroundFromData(
+    href,
+    tempImg.naturalWidth,
+    tempImg.naturalHeight
+    );
+    capture();
+};
+tempImg.src = href;
+
     capture();
   };
   reader.readAsDataURL(file);
 });
 
-function loadBackgroundFromData(href, w, h, store) {
-  // remove existing image
-  const existing = canvas.querySelector('#bgImage');
-  if (existing) existing.remove();
+function loadBackgroundFromData(href, imgW, imgH) {
+  // Remove existing background image
+  const old = canvas.querySelector('#bgImage');
+  if (old) old.remove();
+
+  // IMPORTANT: SVG coordinates must match image pixels
+  canvas.setAttribute('viewBox', `0 0 ${imgW} ${imgH}`);
+  canvas.setAttribute('width', imgW);
+  canvas.setAttribute('height', imgH);
+  canvas.removeAttribute('preserveAspectRatio');
 
   const img = document.createElementNS(svgNS, 'image');
   img.setAttribute('id', 'bgImage');
+  img.setAttribute('x', 0);
+  img.setAttribute('y', 0);
+  img.setAttribute('width', imgW);
+  img.setAttribute('height', imgH);
   img.setAttribute('href', href);
   img.style.pointerEvents = 'none';
-
-  // Ensure SVG has a viewBox (critical for centering)
-  if (!canvas.getAttribute('viewBox')) {
-    const cw = canvas.clientWidth || 1200;
-    const ch = canvas.clientHeight || 800;
-    canvas.setAttribute('viewBox', `0 0 ${cw} ${ch}`);
-    canvas.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-  }
-
-  const vb = canvas.viewBox.baseVal;
-  const svgW = vb.width;
-  const svgH = vb.height;
-
-  // Load image to get natural size
-  const tempImg = new Image();
-  tempImg.onload = () => {
-    const imgW = tempImg.naturalWidth;
-    const imgH = tempImg.naturalHeight;
-
-    // Scale image to fit canvas
-    const scale = Math.min(svgW / imgW, svgH / imgH);
-
-    const drawW = imgW * scale;
-    const drawH = imgH * scale;
-
-    // Center image
-    const x = (svgW - drawW) / 2;
-    const y = (svgH - drawH) / 2;
-
-    img.setAttribute('x', x);
-    img.setAttribute('y', y);
-    img.setAttribute('width', drawW);
-    img.setAttribute('height', drawH);
-  };
-
-  tempImg.src = href;
 
   canvas.insertBefore(img, canvas.firstChild);
 
   bgImage = {
-    href,
-    width: w,
-    height: h
+    href: href,
+    width: imgW,
+    height: imgH
   };
 }
 
@@ -645,4 +629,5 @@ function generateId() {
   do { id = `Area_${regionCounter++}`; } while(document.getElementById(id));
   return id;
 }
+
 
