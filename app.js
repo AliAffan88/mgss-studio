@@ -291,15 +291,27 @@ function createHandles(r){
     const circ=document.createElementNS(svgNS,'circle'); circ.setAttribute('r',6); circ.setAttribute('cx',0); circ.setAttribute('cy',0);
     g.appendChild(circ);
     g.addEventListener('mousedown', ev=>{
-      ev.stopPropagation(); draggingHandle=g;
-      const rect = canvas.getBoundingClientRect();
-      const mx=ev.clientX-rect.left, my=ev.clientY-rect.top;
-      const tr=g.getAttribute('transform'); const m=/translate\(([-\d.]+),([-\d.]+)\)/.exec(tr);
-      const hx=m?parseFloat(m[1]):0, hy=m?parseFloat(m[2]):0;
-      dragOffset=[mx-hx,my-hy];
-      window.addEventListener('mousemove', handleDragging);
-      window.addEventListener('mouseup', stopDraggingHandle);
-    });
+  ev.stopPropagation();
+  draggingHandle = g;
+
+  // current handle position (from transform)
+  const tr = g.getAttribute('transform');
+  const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(tr);
+  const hx = m ? parseFloat(m[1]) : 0;
+  const hy = m ? parseFloat(m[2]) : 0;
+
+  // mouse position in SVG coordinates
+  const pt = clientToSvg(ev);
+
+  // correct SVG-based offset
+  dragOffset = [
+    pt.x - hx,
+    pt.y - hy
+  ];
+
+  window.addEventListener('mousemove', handleDragging);
+  window.addEventListener('mouseup', stopDraggingHandle);
+});
     g.addEventListener('contextmenu', ev=>{ ev.preventDefault(); const i=parseInt(g.getAttribute('data-idx'),10); removeVertex(r,i); });
     canvas.appendChild(g); handles.push(g);
   });
@@ -308,8 +320,8 @@ function createHandles(r){
 
 function handleDragging(ev){
   if(!draggingHandle||!selected) return;
-  const rect = canvas.getBoundingClientRect();
-  const mx=ev.clientX-rect.left, my=ev.clientY-rect.top;
+  const pt = clientToSvg(ev);
+  const mx=pt.x, my=pt.y;
   const nx=mx-dragOffset[0], ny=my-dragOffset[1];
   draggingHandle.setAttribute('transform',`translate(${nx},${ny})`);
   const idx=parseInt(draggingHandle.getAttribute('data-idx'),10);
@@ -419,6 +431,7 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
 
 
 
