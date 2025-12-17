@@ -181,9 +181,15 @@ document.addEventListener('keydown', ev=>{
 // helpers
 function clientToSvg(ev){
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.viewBox.baseVal.width / rect.width;
-  const scaleY = canvas.viewBox.baseVal.height / rect.height;
-  return { x:(ev.clientX - rect.left)*scaleX, y:(ev.clientY - rect.top)*scaleY };
+  const vb = canvas.viewBox.baseVal;
+  const scaleX = vb.width / rect.width;
+  const scaleY = vb.height / rect.height;
+  const offsetX = vb.x;
+  const offsetY = vb.y;
+  return {
+    x: (ev.clientX - rect.left) * scaleX + offsetX,
+    y: (ev.clientY - rect.top) * scaleY + offsetY
+  };
 }
 
 function startRegion(x,y){
@@ -415,4 +421,5 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
 
