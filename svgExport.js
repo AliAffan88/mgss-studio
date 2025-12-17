@@ -1,46 +1,41 @@
 // MGSS SVG EXPORT VERSION: 2025-ALIGNMENT-FIX
 // svgExport.js - Synoptic & Power BI safe SVG export
 // Guarantees 1:1 coordinate alignment between image and regions
+// svgExport.js - Power BI safe SVG export with correct alignment
 
-function buildCleanSVGFragment(items, width, height, includeImageData) {
+function buildCleanSVGFragment(items, width, height, imageData) {
   const xmlns = 'http://www.w3.org/2000/svg';
-
-  // Use image natural size as the master coordinate system when included
-  const vbW = includeImageData ? includeImageData.width : width;
-  const vbH = includeImageData ? includeImageData.height : height;
 
   let svg =
     `<svg xmlns="${xmlns}" ` +
-    `width="${vbW}" height="${vbH}" ` +
-    `viewBox="0 0 ${vbW} ${vbH}">`;
+    `width="${width}" height="${height}" ` +
+    `viewBox="0 0 ${width} ${height}">`;
 
-  // Background image (no scaling drift, Synoptic-safe)
-  if (includeImageData && includeImageData.href) {
-    const href = escapeXml(includeImageData.href);
+  // Background image (ONLY href, no xlink)
+  if (imageData && imageData.href) {
     svg +=
-      `<image ` +
-      `id="bgImage" ` +
+      `<image id="bgImage" ` +
       `x="0" y="0" ` +
-      `width="${vbW}" height="${vbH}" ` +
-      `href="${href}" ` +
+      `width="${width}" height="${height}" ` +
+      `href="${imageData.href}" ` +
       `preserveAspectRatio="none" />`;
   }
 
-  // Regions (pure SVG, no transforms, no groups)
+  // Regions
   items.forEach(it => {
     if (it.tag === 'polygon') {
       svg +=
-        `<polygon ` +
-        `id="${escapeXml(it.id)}" ` +
+        `<polygon id="${escapeXml(it.id)}" ` +
         `points="${escapeXml(it.attr.points)}" ` +
         `fill="${escapeXml(it.attr.fill)}" ` +
         `fill-opacity="${it.attr['fill-opacity']}" ` +
         `stroke="${escapeXml(it.attr.stroke)}" ` +
         `stroke-width="${it.attr['stroke-width']}" />`;
-    } else if (it.tag === 'path') {
+    }
+
+    if (it.tag === 'path') {
       svg +=
-        `<path ` +
-        `id="${escapeXml(it.id)}" ` +
+        `<path id="${escapeXml(it.id)}" ` +
         `d="${escapeXml(it.attr.d)}" ` +
         `fill="${escapeXml(it.attr.fill)}" ` +
         `fill-opacity="${it.attr['fill-opacity']}" ` +
@@ -53,7 +48,6 @@ function buildCleanSVGFragment(items, width, height, includeImageData) {
   return svg;
 }
 
-// XML-safe escaping
 function escapeXml(s) {
   return String(s || '')
     .replace(/&/g, '&amp;')
