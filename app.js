@@ -132,10 +132,14 @@ function loadBackgroundFromData(href,imgW,imgH){
 // Mouse events
 canvas.addEventListener('mousedown', ev=>{
   if(ev.target.classList && ev.target.classList.contains('handle')) return;
-  const {x,y} = clientToSvg(ev);
+  const {x:svgX,y:svgY} = clientToSvg(ev); // use precise SVG coordinates
   if(mode==='polygon'||mode==='bezier'){
-    if(!drawing) startRegion(x,y);
-    else addPoint(x,y,false);
+    if(!drawing){
+      // start exactly at mouse cursor
+      startRegion(svgX, svgY);
+      // push first point immediately
+      addPoint(svgX, svgY, false);
+    } else addPoint(svgX, svgY,false);
   } else if(mode==='select'){
     if(ev.target.tagName==='polygon'||ev.target.tagName==='path'){
       const id = ev.target.id;
@@ -411,3 +415,4 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
