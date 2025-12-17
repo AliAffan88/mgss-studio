@@ -9,11 +9,12 @@ function buildCleanSVGFragment(items, width, height, imageData) {
 
   // Background image (ONLY href, never xlink)
   if (imageData && imageData.href) {
-    svg += `<image id="bgImage" ` +
-           `x="0" y="0" ` +
-           `width="${width}" height="${height}" ` +
-           `href="${imageData.href}" />`;
-  }
+  svg += `<image id="bgImage" ` +
+         `x="0" y="0" ` +
+         `width="${imageData.width}" ` +
+         `height="${imageData.height}" ` +
+         `href="${imageData.href}" />`;
+}
 
   // Regions
   items.forEach(it => {
@@ -49,3 +50,4 @@ function escapeXml(v) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+
