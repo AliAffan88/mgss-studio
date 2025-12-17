@@ -1,31 +1,32 @@
-// MGSS SVG EXPORT VERSION: 2025-ALIGNMENT-FIX
-// svgExport.js - Synoptic & Power BI safe SVG export
-// Guarantees 1:1 coordinate alignment between image and regions
 // svgExport.js - Power BI safe SVG export with correct alignment
 
-function buildCleanSVGFragment(items, width, height, imageData) {
+// svgExport.js — FINAL Power BI–safe exporter
+
+function buildCleanSVGFragment(items, canvasWidth, canvasHeight, imageData) {
   const xmlns = 'http://www.w3.org/2000/svg';
 
+  // SVG root — viewBox defines ALL coordinates
   let svg =
     `<svg xmlns="${xmlns}" ` +
-    `width="${width}" height="${height}" ` +
-    `viewBox="0 0 ${width} ${height}">`;
+    `width="${canvasWidth}" height="${canvasHeight}" ` +
+    `viewBox="0 0 ${canvasWidth} ${canvasHeight}">`;
 
-  // Background image (ONLY href, no xlink)
+  // Background image — NO xlink, NO preserveAspectRatio tricks
   if (imageData && imageData.href) {
     svg +=
-      `<image id="bgImage" ` +
+      `<image ` +
+      `id="bgImage" ` +
       `x="0" y="0" ` +
-      `width="${width}" height="${height}" ` +
-      `href="${imageData.href}" ` +
-      `preserveAspectRatio="none" />`;
+      `width="${canvasWidth}" height="${canvasHeight}" ` +
+      `href="${imageData.href}" />`;
   }
 
-  // Regions
+  // Regions — coordinates already normalized to viewBox
   items.forEach(it => {
     if (it.tag === 'polygon') {
       svg +=
-        `<polygon id="${escapeXml(it.id)}" ` +
+        `<polygon ` +
+        `id="${escapeXml(it.id)}" ` +
         `points="${escapeXml(it.attr.points)}" ` +
         `fill="${escapeXml(it.attr.fill)}" ` +
         `fill-opacity="${it.attr['fill-opacity']}" ` +
@@ -35,7 +36,8 @@ function buildCleanSVGFragment(items, width, height, imageData) {
 
     if (it.tag === 'path') {
       svg +=
-        `<path id="${escapeXml(it.id)}" ` +
+        `<path ` +
+        `id="${escapeXml(it.id)}" ` +
         `d="${escapeXml(it.attr.d)}" ` +
         `fill="${escapeXml(it.attr.fill)}" ` +
         `fill-opacity="${it.attr['fill-opacity']}" ` +
@@ -48,11 +50,12 @@ function buildCleanSVGFragment(items, width, height, imageData) {
   return svg;
 }
 
-function escapeXml(s) {
-  return String(s || '')
+function escapeXml(value) {
+  return String(value || '')
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
+
 
