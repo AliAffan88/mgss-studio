@@ -5,7 +5,7 @@ function buildCleanSVGFragment(items, width, height, imageData) {
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
 
   if(imageData && imageData.href){
-    svg += `<image id="bgImage" x="0" y="0" width="${imageData.width}" height="${imageData.height}" href="${imageData.href}"/>`;
+    svg += `<image id="bgImage" x="0" y="0" width="${imageData.width}" height="${imageData.height}" xlink:href="${imageData.href}" />`;
   }
 
   items.forEach(it=>{
@@ -23,3 +23,4 @@ function buildCleanSVGFragment(items, width, height, imageData) {
 function escapeXml(v){
   return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
