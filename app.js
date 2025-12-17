@@ -179,16 +179,14 @@ document.addEventListener('keydown', ev=>{
 });
 
 // helpers
-function clientToSvg(ev){
-  const rect = canvas.getBoundingClientRect();
-  const vb = canvas.viewBox.baseVal;
-  const scaleX = vb.width / rect.width;
-  const scaleY = vb.height / rect.height;
-  const offsetX = vb.x;
-  const offsetY = vb.y;
+function clientToSvg(ev) {
+  const pt = canvas.createSVGPoint();
+  pt.x = ev.clientX;
+  pt.y = ev.clientY;
+  const svgPt = pt.matrixTransform(canvas.getScreenCTM().inverse());
   return {
-    x: (ev.clientX - rect.left) * scaleX + offsetX,
-    y: (ev.clientY - rect.top) * scaleY + offsetY
+    x: svgPt.x,
+    y: svgPt.y
   };
 }
 
@@ -421,5 +419,6 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
 
 
