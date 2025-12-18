@@ -11,10 +11,8 @@ const selectBtn = document.getElementById('selectBtn');
 const uploadImage = document.getElementById('uploadImage');
 const includeImage = document.getElementById('includeImage');
 const exportPowerBI = document.getElementById('exportPowerBI');
-const dataFieldInput = document.getElementById('dataFieldInput');
 const exportFull = document.getElementById('exportFull');
 const regionList = document.getElementById('regionList');
-const regionNameInput = document.getElementById('regionNameInput');
 const regionIDInput = document.getElementById('regionID');
 const fillColorInput = document.getElementById('fillColor');
 const fillOpacityInput = document.getElementById('fillOpacity');
@@ -285,8 +283,6 @@ function selectRegion(r){
   r.element.classList.add('selected');
   regionFieldInput.value = r.field || '';
   regionIDInput.value=r.id;
-  regionNameInput.value = r.id;
-  dataFieldInput.value = r.dataField || '';
   fillColorInput.value=r.color||defaultColorInput.value;
   fillOpacityInput.value=r.opacity!=null?r.opacity:defaultOpacityInput.value;
   recreateHandles(r);
@@ -403,25 +399,18 @@ function updateRegionList(){
 // property updates
 fillColorInput.addEventListener('input',()=>{ if(selected){ selected.color=fillColorInput.value; updateRegionElement(selected); capture(); } });
 fillOpacityInput.addEventListener('input',()=>{ if(selected){ selected.opacity=parseFloat(fillOpacityInput.value); updateRegionElement(selected); capture(); } });
-regionNameInput.addEventListener('input', () => {
+regionFieldInput.addEventListener('input', () => {
   if (!selected) return;
 
-  const newId = regionNameInput.value.trim();
-  if (!newId) return;
+  selected.field = regionFieldInput.value.trim();
 
-  selected.id = newId;
-  selected.element.setAttribute('id', newId);
-});
-dataFieldInput.addEventListener('input', () => {
-  if (!selected) return;
-
-  selected.dataField = dataFieldInput.value.trim();
-
-  if (selected.dataField) {
-    selected.element.setAttribute('data-field', selected.dataField);
+  if (selected.field) {
+    selected.element.setAttribute('data-field', selected.field);
   } else {
     selected.element.removeAttribute('data-field');
   }
+
+  capture();
 });
 //regionFieldInput.addEventListener('input', () => {if (!selected) return; selected.field = regionFieldInput.value.trim(); if (selected.element) {
 //    if (selected.field) {
@@ -430,22 +419,55 @@ dataFieldInput.addEventListener('input', () => {
  //     selected.element.removeAttribute('data-field');
  //   }
 //  } 
-regionIdInput.addEventListener('input', () => {
+regionIDInput.addEventListener('input', () => {
   if (!selected) return;
 
-  const newId = regionIdInput.value.trim();
+  const newId = regionIDInput.value.trim();
   if (!newId) return;
 
-  selected.id = newId;
-
-  if (selected.element) {
-    selected.element.setAttribute('id', newId);
+  if (regions.has(newId) && newId !== selected.id) {
+    alert("Region ID already exists");
+    regionIDInput.value = selected.id;
+    return;
   }
 
-capture(); });
+  const oldId = selected.id;
+
+  // update Map key
+  regions.delete(oldId);
+  selected.id = newId;
+  regions.set(newId, selected);
+
+  // update SVG
+  selected.element.setAttribute('id', newId);
+
+  updateRegionList();
+  capture();
+});
 
 // export
-exportPowerBI.addEventListener('click',()=>{ const svgStr=buildCleanSVGFragment([...regions.values()].map(r=>{ return { tag:r.points.some(p=>p.curve)?'path':'polygon', id:r.id, attr:{ points:r.points.map(p=>`${p.x},${p.y}`).join(' '), d:r.points.some(p=>p.curve)?createPathD(r):'', fill:r.color, 'fill-opacity':r.opacity, 'data-field': r.datafield || '', stroke:'black', 'stroke-width':'1.5' } }; }),canvas.viewBox.baseVal.width, canvas.viewBox.baseVal.height,bgImage); downloadSVG(svgStr,'mgss_full.svg'); });
+exportPowerBI.addEventListener('click', () => {
+  const svgStr = buildCleanSVGFragment(
+    [...regions.values()].map(r => ({
+      tag: r.points.some(p => p.curve) ? 'path' : 'polygon',
+      id: r.id,
+      attr: {
+        points: r.points.map(p => `${p.x},${p.y}`).join(' '),
+        d: r.points.some(p => p.curve) ? createPathD(r) : '',
+        fill: r.color,
+        'fill-opacity': r.opacity,
+        'data-field': r.field || '',
+        stroke: 'black',
+        'stroke-width': '1.5'
+      }
+    })),
+    canvas.viewBox.baseVal.width,
+    canvas.viewBox.baseVal.height,
+    bgImage
+  );
+
+  downloadSVG(svgStr, 'mgss_full.svg');
+});
 exportFull.addEventListener('click',()=>{ const svgStr=canvas.outerHTML; downloadSVG(svgStr,'mgss_full_raw.svg'); });
 
 function createPathD(r){ const pts=r.points; let d=`M ${pts[0].x} ${pts[0].y}`; for(let i=1;i<pts.length;i++){ const p=pts[i]; if(p.curve&&p.cx!=null&&p.cy!=null) d+=` Q ${p.cx} ${p.cy} ${p.x} ${p.y}`; else d+=` L ${p.x} ${p.y}`; } return d+' Z'; }
