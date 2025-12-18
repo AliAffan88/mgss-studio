@@ -11,8 +11,10 @@ const selectBtn = document.getElementById('selectBtn');
 const uploadImage = document.getElementById('uploadImage');
 const includeImage = document.getElementById('includeImage');
 const exportPowerBI = document.getElementById('exportPowerBI');
+const dataFieldInput = document.getElementById('dataFieldInput');
 const exportFull = document.getElementById('exportFull');
 const regionList = document.getElementById('regionList');
+const regionNameInput = document.getElementById('regionNameInput');
 const regionIDInput = document.getElementById('regionID');
 const fillColorInput = document.getElementById('fillColor');
 const fillOpacityInput = document.getElementById('fillOpacity');
@@ -283,9 +285,11 @@ function selectRegion(r){
   r.element.classList.add('selected');
   regionFieldInput.value = r.field || '';
   regionIDInput.value=r.id;
+  regionNameInput.value = r.id;
+  dataFieldInput.value = r.dataField || '';
   fillColorInput.value=r.color||defaultColorInput.value;
   fillOpacityInput.value=r.opacity!=null?r.opacity:defaultOpacityInput.value;
-  createHandles(r);
+  recreateHandles(r);
 }
 function deselect(){ if(selected){ selected.element.classList.remove('selected'); removeHandles(); } selected=null; regionIDInput.value=''; fillColorInput.value='#000000'; fillOpacityInput.value=0; }
 
@@ -399,6 +403,26 @@ function updateRegionList(){
 // property updates
 fillColorInput.addEventListener('input',()=>{ if(selected){ selected.color=fillColorInput.value; updateRegionElement(selected); capture(); } });
 fillOpacityInput.addEventListener('input',()=>{ if(selected){ selected.opacity=parseFloat(fillOpacityInput.value); updateRegionElement(selected); capture(); } });
+regionNameInput.addEventListener('input', () => {
+  if (!selected) return;
+
+  const newId = regionNameInput.value.trim();
+  if (!newId) return;
+
+  selected.id = newId;
+  selected.element.setAttribute('id', newId);
+});
+dataFieldInput.addEventListener('input', () => {
+  if (!selected) return;
+
+  selected.dataField = dataFieldInput.value.trim();
+
+  if (selected.dataField) {
+    selected.element.setAttribute('data-field', selected.dataField);
+  } else {
+    selected.element.removeAttribute('data-field');
+  }
+});
 //regionFieldInput.addEventListener('input', () => {if (!selected) return; selected.field = regionFieldInput.value.trim(); if (selected.element) {
 //    if (selected.field) {
  //     selected.element.setAttribute('data-field', selected.field);
