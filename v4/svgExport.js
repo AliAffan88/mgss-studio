@@ -20,6 +20,9 @@ function buildCleanSVGFragment(items, width, height, imageData) {
   // Add all regions
   items.forEach(it => {
     if (it.tag === "polygon") {
+      if (it.attr['data-field']) {
+  svg += ` data-field="${escapeXml(it.attr['data-field'])}"`;
+}
       svg += `<polygon ` +
              `id="${escapeXml(it.id)}" ` +
              `points="${escapeXml(it.attr.points)}" ` +
@@ -30,6 +33,10 @@ function buildCleanSVGFragment(items, width, height, imageData) {
     }
 
     if (it.tag === "path") {
+      if (it.attr['data-field']) {
+  svg += ` data-field="${escapeXml(it.attr['data-field'])}"`;
+}
+
       svg += `<path ` +
              `id="${escapeXml(it.id)}" ` +
              `d="${escapeXml(it.attr.d)}" ` +
