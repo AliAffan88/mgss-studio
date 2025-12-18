@@ -408,7 +408,7 @@ regionFieldInput.addEventListener('input', () => {if (!selected) return; selecte
   } capture(); });
 
 // export
-exportPowerBI.addEventListener('click',()=>{ const svgStr=buildCleanSVGFragment([...regions.values()].map(r=>{ return { tag:r.points.some(p=>p.curve)?'path':'polygon', id:r.id, attr:{ points:r.points.map(p=>`${p.x},${p.y}`).join(' '), d:r.points.some(p=>p.curve)?createPathD(r):'', fill:r.color, 'fill-opacity':r.opacity, stroke:'black', 'stroke-width':'1.5' } }; }),canvas.viewBox.baseVal.width, canvas.viewBox.baseVal.height,bgImage); downloadSVG(svgStr,'mgss_full.svg'); });
+exportPowerBI.addEventListener('click',()=>{ const svgStr=buildCleanSVGFragment([...regions.values()].map(r=>{ return { tag:r.points.some(p=>p.curve)?'path':'polygon', id:r.id, attr:{ points:r.points.map(p=>`${p.x},${p.y}`).join(' '), d:r.points.some(p=>p.curve)?createPathD(r):'', fill:r.color, 'fill-opacity':r.opacity, 'data-field': r.field || '', stroke:'black', 'stroke-width':'1.5' } }; }),canvas.viewBox.baseVal.width, canvas.viewBox.baseVal.height,bgImage); downloadSVG(svgStr,'mgss_full.svg'); });
 exportFull.addEventListener('click',()=>{ const svgStr=canvas.outerHTML; downloadSVG(svgStr,'mgss_full_raw.svg'); });
 
 function createPathD(r){ const pts=r.points; let d=`M ${pts[0].x} ${pts[0].y}`; for(let i=1;i<pts.length;i++){ const p=pts[i]; if(p.curve&&p.cx!=null&&p.cy!=null) d+=` Q ${p.cx} ${p.cy} ${p.x} ${p.y}`; else d+=` L ${p.x} ${p.y}`; } return d+' Z'; }
