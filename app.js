@@ -193,7 +193,7 @@ function clientToSvg(ev) {
 
 function startRegion(x,y){
   const id = generateId();
-  current = { id, points:[{x:Math.round(x),y:Math.round(y),curve:false}], element:null, color:defaultColorInput.value, opacity:parseFloat(defaultOpacityInput.value) };
+  current = { id, points:[{x:Math.round(x),y:Math.round(y),curve:false}], field: '', element:null, color:defaultColorInput.value, opacity:parseFloat(defaultOpacityInput.value) };
   createRegionElement(current);
   drawing=true;
   showTempCursor(x,y);
@@ -276,6 +276,7 @@ function selectRegion(r){
   deselect();
   selected=r;
   r.element.classList.add('selected');
+  regionFieldInput.value = r.field || '';
   regionIDInput.value=r.id;
   fillColorInput.value=r.color||defaultColorInput.value;
   fillOpacityInput.value=r.opacity!=null?r.opacity:defaultOpacityInput.value;
@@ -432,6 +433,7 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
 
 
 
