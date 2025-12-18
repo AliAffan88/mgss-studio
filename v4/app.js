@@ -70,7 +70,8 @@ function snapshotState(){
       id: r.id,
       points: r.points.map(p=>({x:p.x,y:p.y,curve:p.curve?true:false,cx:p.cx||null,cy:p.cy||null})),
       color: r.color,
-      opacity: r.opacity
+      opacity: r.opacity,
+      field: r.field || ''
     });
   });
   return obj;
@@ -84,11 +85,15 @@ function restoreState(obj){
       id, 
       points: rr.points.map(p=>({x:p.x,y:p.y,curve:!!p.curve,cx:p.cx||null,cy:p.cy||null})), 
       color: rr.color||defaultColorInput.value, 
-      opacity: rr.opacity!=null?rr.opacity:parseFloat(defaultOpacityInput.value)
+      opacity: rr.opacity!=null?rr.opacity:parseFloat(defaultOpacityInput.value),
+      field: rr.field || ''
     };
     createRegionElement(r);
     regions.set(id,r);
   });
+  if (r.field) {
+  r.element.setAttribute('data-field', r.field);
+}
   updateRegionList();
 }
 
