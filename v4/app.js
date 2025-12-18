@@ -394,7 +394,13 @@ function updateRegionList(){
 // property updates
 fillColorInput.addEventListener('input',()=>{ if(selected){ selected.color=fillColorInput.value; updateRegionElement(selected); capture(); } });
 fillOpacityInput.addEventListener('input',()=>{ if(selected){ selected.opacity=parseFloat(fillOpacityInput.value); updateRegionElement(selected); capture(); } });
-regionFieldInput.addEventListener('input', () => {if (!selected) return; selected.field = regionFieldInput.value.trim(); capture(); });
+regionFieldInput.addEventListener('input', () => {if (!selected) return; selected.field = regionFieldInput.value.trim(); if (selected.element) {
+    if (selected.field) {
+      selected.element.setAttribute('data-field', selected.field);
+    } else {
+      selected.element.removeAttribute('data-field');
+    }
+  } capture(); });
 
 // export
 exportPowerBI.addEventListener('click',()=>{ const svgStr=buildCleanSVGFragment([...regions.values()].map(r=>{ return { tag:r.points.some(p=>p.curve)?'path':'polygon', id:r.id, attr:{ points:r.points.map(p=>`${p.x},${p.y}`).join(' '), d:r.points.some(p=>p.curve)?createPathD(r):'', fill:r.color, 'fill-opacity':r.opacity, stroke:'black', 'stroke-width':'1.5' } }; }),canvas.viewBox.baseVal.width, canvas.viewBox.baseVal.height,bgImage); downloadSVG(svgStr,'mgss_full.svg'); });
