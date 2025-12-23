@@ -62,6 +62,7 @@ handBtn.onclick = () => setMode('hand');
 
 function setMode(m){
   mode = m;
+  document.body.classList.toggle('mode-hand', m === 'hand');
   document.querySelectorAll('.modeBtn').forEach(b=>b.classList.remove('active'));
   if(m==='polygon') polyBtn.classList.add('active');
   if(m==='bezier') bezierBtn.classList.add('active');
