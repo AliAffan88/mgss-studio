@@ -29,10 +29,11 @@ html,body,#app { height:100%; margin:0; font-family:Inter,Segoe UI,Arial,sans-se
 .tips ul { margin:6px 0 0 18px; padding:0; font-size:13px; color:var(--muted); }
 
 /* Canvas */
-#main { flex:1; display:flex; align-items:stretch; justify-content:center; overflow:hidden; padding:12px; }
+#main { flex:1; display:flex; align-items:stretch; justify-content:stretch; overflow:hidden; padding:12px; }
 #canvasWrapper {
-  width: 100%;
-  height: calc(100vh - 120px); /* adjust if toolbar height differs */
+  flex: 1;
+  /*width: 100%;
+  height: calc(100vh - 120px); adjust if toolbar height differs */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -50,7 +51,7 @@ html,body,#app { height:100%; margin:0; font-family:Inter,Segoe UI,Arial,sans-se
 .mode-hand #svgCanvas {
   cursor: grab;
 }
-}
+
 
 /* Sidepanel */
 #sidepanel { width:280px; min-width:280px; max-width:280px; background:var(--panel); border-left:1px solid #ddd; padding:12px; overflow:auto; }
