@@ -45,6 +45,11 @@ html,body,#app { height:100%; margin:0; font-family:Inter,Segoe UI,Arial,sans-se
   width: auto;
   height: auto;
   display: block;
+  cursor: crosshair;
+}
+.mode-hand #svgCanvas {
+  cursor: grab;
+}
 }
 
 /* Sidepanel */
