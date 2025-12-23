@@ -25,6 +25,10 @@ const redoBtn = document.getElementById('redoBtn');
 const autosaveCheckbox = document.getElementById('autosave');
 const themeToggle = document.getElementById('themeToggle');
 
+let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+
 let mode = 'polygon';
 let drawing = false;
 let current = null;
@@ -133,6 +137,7 @@ function loadBackgroundFromData(href,imgW,imgH){
   img.style.pointerEvents='none';
   canvas.insertBefore(img,canvas.firstChild);
   bgImage = { href, width:imgW, height:imgH };
+  viewBox = { x: 0, y: 0, w: imgW, h: imgH };
 }
 
 // Mouse events
@@ -210,6 +215,13 @@ function addPoint(x,y,curve=false,cx=null,cy=null){
   if(curve&&cx!=null&&cy!=null){p.cx=Math.round(cx); p.cy=Math.round(cy);}
   current.points.push(p);
   updateRegionElement(current);
+}
+
+function updateViewBox() {
+  canvas.setAttribute(
+    'viewBox',
+    `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
+  );
 }
 
 function updateTempLine(x,y){
@@ -397,6 +409,54 @@ function updateRegionList(){
 }
 
 // property updates
+canvas.addEventListener('wheel', ev => {
+  ev.preventDefault();
+
+  const zoomFactor = ev.deltaY > 0 ? 1.1 : 0.9;
+  const pt = clientToSvg(ev);
+
+  viewBox.x = pt.x - (pt.x - viewBox.x) * zoomFactor;
+  viewBox.y = pt.y - (pt.y - viewBox.y) * zoomFactor;
+  viewBox.w *= zoomFactor;
+  viewBox.h *= zoomFactor;
+
+  updateViewBox();
+});
+document.addEventListener('keydown', ev => {
+  if (ev.code === 'Space') canvas.style.cursor = 'grab';
+});
+
+document.addEventListener('keyup', ev => {
+  if (ev.code === 'Space') canvas.style.cursor = 'default';
+});
+
+canvas.addEventListener('mousedown', ev => {
+  if (ev.code === 'Space' || ev.button === 1) {
+    isPanning = true;
+    panStart = { x: ev.clientX, y: ev.clientY };
+    canvas.style.cursor = 'grabbing';
+  }
+});
+
+canvas.addEventListener('mousemove', ev => {
+  if (!isPanning) return;
+
+  const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
+  const dy = (ev.clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
+
+  viewBox.x -= dx;
+  viewBox.y -= dy;
+
+  panStart = { x: ev.clientX, y: ev.clientY };
+  updateViewBox();
+});
+
+document.addEventListener('mouseup', () => {
+  isPanning = false;
+  canvas.style.cursor = 'default';
+});
+
+
 fillColorInput.addEventListener('input',()=>{ if(selected){ selected.color=fillColorInput.value; updateRegionElement(selected); capture(); } });
 fillOpacityInput.addEventListener('input',()=>{ if(selected){ selected.opacity=parseFloat(fillOpacityInput.value); updateRegionElement(selected); capture(); } });
 regionFieldInput.addEventListener('input', () => {
