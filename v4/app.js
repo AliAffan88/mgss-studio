@@ -24,6 +24,8 @@ const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 const autosaveCheckbox = document.getElementById('autosave');
 const themeToggle = document.getElementById('themeToggle');
+const handBtn = document.getElementById('handBtn');
+
 
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
 let isPanning = false;
@@ -55,6 +57,8 @@ themeToggle.onclick = () => {
 polyBtn.onclick = ()=> setMode('polygon');
 bezierBtn.onclick = ()=> setMode('bezier');
 selectBtn.onclick = ()=> setMode('select');
+handBtn.onclick = () => setMode('hand');
+
 
 function setMode(m){
   mode = m;
@@ -62,6 +66,7 @@ function setMode(m){
   if(m==='polygon') polyBtn.classList.add('active');
   if(m==='bezier') bezierBtn.classList.add('active');
   if(m==='select') selectBtn.classList.add('active');
+  if(m === 'hand') handBtn.classList.add('active');
   deselect();
 }
 
@@ -142,6 +147,13 @@ function loadBackgroundFromData(href,imgW,imgH){
 
 // Mouse events
 canvas.addEventListener('mousedown', ev=>{
+  if (mode === 'hand') {
+  isPanning = true;
+  panStart = { x: ev.clientX, y: ev.clientY };
+  canvas.style.cursor = 'grabbing';
+  return;
+}
+
   if(ev.target.classList && ev.target.classList.contains('handle')) return;
   const {x:svgX,y:svgY} = clientToSvg(ev); // use precise SVG coordinates
   if(mode==='polygon'||mode==='bezier'){
@@ -160,6 +172,18 @@ canvas.addEventListener('mousedown', ev=>{
 });
 
 canvas.addEventListener('mousemove', ev=>{
+  if (isPanning) {
+  const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
+  const dy = (ev.clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
+
+  viewBox.x -= dx;
+  viewBox.y -= dy;
+
+  panStart = { x: ev.clientX, y: ev.clientY };
+  updateViewBox();
+  return;
+}
+
   const {x,y} = clientToSvg(ev);
   if(drawing){ updateTempLine(x,y); showTempCursor(x,y); }
   if(selected && !drawing){
