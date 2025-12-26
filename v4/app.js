@@ -146,6 +146,20 @@ function loadBackgroundFromData(href,imgW,imgH){
   viewBox = { x: 0, y: 0, w: imgW, h: imgH };
 }
 
+function removeBackgroundImage() {
+  const old = canvas.querySelector('#bgImage');
+  if (old) old.remove();
+
+  bgImage = null;
+
+  // Reset viewBox to a safe default
+  canvas.setAttribute('viewBox', '0 0 1000 700');
+  canvas.setAttribute('width', 1000);
+  canvas.setAttribute('height', 700);
+
+  viewBox = { x: 0, y: 0, w: 1000, h: 700 };
+}
+
 // Mouse events
 canvas.addEventListener('mousedown', ev=>{
   if (mode === 'hand') {
