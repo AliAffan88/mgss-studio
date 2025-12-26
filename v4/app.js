@@ -160,6 +160,13 @@ function removeBackgroundImage() {
   viewBox = { x: 0, y: 0, w: 1000, h: 700 };
 }
 
+document.getElementById('removeBgBtn').addEventListener('click', () => {
+  if (!bgImage) return;
+  if (!confirm('Remove background image?')) return;
+  removeBackgroundImage();
+});
+
+
 // Mouse events
 canvas.addEventListener('mousedown', ev=>{
   if (mode === 'hand') {
