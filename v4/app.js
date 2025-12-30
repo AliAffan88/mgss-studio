@@ -126,8 +126,6 @@ UndoRedo.onChangeSet(()=>{});
 function capture(){ UndoRedo.capture(snapshotState()); }
 
 //Lock Background Check
-const lockBgChk = document.getElementById('lockBgChk');
-
 lockBgChk.addEventListener('change', () => {
   const bg = canvas.querySelector('#bgImage');
   if (!bg) return;
