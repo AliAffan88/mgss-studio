@@ -31,7 +31,7 @@ const ZOOM_STEP = 1.1; // 20% per click
 const lockBgChk = document.getElementById('lockBgChk');
 
 // ===== THEME HANDLING =====
-const themeToggle = document.getElementById('themeToggle');
+//const themeToggle = document.getElementById('themeToggle');
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
