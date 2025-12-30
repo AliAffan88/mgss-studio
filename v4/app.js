@@ -23,16 +23,13 @@ const loadProjectFile = document.getElementById('loadProjectFile');
 const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 const autosaveCheckbox = document.getElementById('autosave');
-const themeToggle = document.getElementById('themeToggle');
 const handBtn = document.getElementById('handBtn');
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; // 20% per click
 const lockBgChk = document.getElementById('lockBgChk');
 
-
 const themeToggle = document.getElementById('themeToggle');
-
 themeToggle.addEventListener('click', () => {
   const html = document.documentElement;
   const isDark = html.getAttribute('data-theme') === 'dark';
