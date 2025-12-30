@@ -31,6 +31,14 @@ const ZOOM_STEP = 1.1; // 20% per click
 const lockBgChk = document.getElementById('lockBgChk');
 
 
+const themeToggle = document.getElementById('themeToggle');
+
+themeToggle.addEventListener('click', () => {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+});
 
 
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
