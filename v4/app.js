@@ -20,6 +20,7 @@ const defaultColorInput = document.getElementById('defaultColor');
 const defaultOpacityInput = document.getElementById('defaultOpacity');
 const saveProjectBtn = document.getElementById('saveProjectBtn');
 const loadProjectFile = document.getElementById('loadProjectFile');
+const themeToggle = document.getElementById('themeToggle');
 const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 const autosaveCheckbox = document.getElementById('autosave');
