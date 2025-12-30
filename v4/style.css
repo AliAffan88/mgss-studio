@@ -66,6 +66,10 @@ html,body,#app { height:100%; margin:0; font-family:Inter,Segoe UI,Arial,sans-se
   font-size: 13px;
 }
 
+.bg-locked #bgImage {
+  opacity: 0.9;
+}
+
 /* Region list */
 #regionList { list-style:none; padding:0; margin:0; max-height:48vh; overflow:auto; border-top:1px solid #eee; }
 #regionList li { padding:8px; border-bottom:1px solid #f2f2f2; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
