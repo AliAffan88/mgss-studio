@@ -25,6 +25,10 @@ const redoBtn = document.getElementById('redoBtn');
 const autosaveCheckbox = document.getElementById('autosave');
 const themeToggle = document.getElementById('themeToggle');
 const handBtn = document.getElementById('handBtn');
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 10;
+const ZOOM_STEP = 1.1; // 20% per click
+
 
 
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
@@ -441,6 +445,46 @@ function deleteRegion(id){
   updateRegionList(); capture();
 }
 
+function applyZoom(factor, centerX, centerY) {
+  const vb = canvas.viewBox.baseVal;
+
+  let newW = vb.width / factor;
+  let newH = vb.height / factor;
+
+  const currentZoom = canvas.dataset.zoom
+    ? parseFloat(canvas.dataset.zoom)
+    : 1;
+
+  let nextZoom = currentZoom * factor;
+  if (nextZoom < MIN_ZOOM || nextZoom > MAX_ZOOM) return;
+
+  const dx = (centerX - vb.x) / vb.width;
+  const dy = (centerY - vb.y) / vb.height;
+
+  vb.x += vb.width * dx - newW * dx;
+  vb.y += vb.height * dy - newH * dy;
+  vb.width = newW;
+  vb.height = newH;
+
+  canvas.dataset.zoom = nextZoom;
+  function updateZoomButtons() {
+  const z = parseFloat(canvas.dataset.zoom || 1);
+  zoomInBtn.disabled = z >= MAX_ZOOM;
+  zoomOutBtn.disabled = z <= MIN_ZOOM;
+}
+}
+
+zoomInBtn.addEventListener('click', () => {
+  const vb = canvas.viewBox.baseVal;
+  applyZoom(ZOOM_STEP, vb.x + vb.width / 2, vb.y + vb.height / 2);
+});
+
+zoomOutBtn.addEventListener('click', () => {
+  const vb = canvas.viewBox.baseVal;
+  applyZoom(1 / ZOOM_STEP, vb.x + vb.width / 2, vb.y + vb.height / 2);
+});
+
+
 // clear all
 function clearAllRegions(){ regions.forEach(r=>{ if(r.element&&r.element.parentNode) r.element.parentNode.removeChild(r.element); }); regions.clear(); removeHandles(); selected=null; }
 
@@ -458,16 +502,12 @@ function updateRegionList(){
 canvas.addEventListener('wheel', ev => {
   ev.preventDefault();
 
-  const zoomFactor = ev.deltaY > 0 ? 1.1 : 0.9;
+  const factor = ev.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
   const pt = clientToSvg(ev);
 
-  viewBox.x = pt.x - (pt.x - viewBox.x) * zoomFactor;
-  viewBox.y = pt.y - (pt.y - viewBox.y) * zoomFactor;
-  viewBox.w *= zoomFactor;
-  viewBox.h *= zoomFactor;
-
-  updateViewBox();
+  applyZoom(factor, pt.x, pt.y);
 });
+
 document.addEventListener('keydown', ev => {
   if (ev.code === 'Space') canvas.style.cursor = 'grab';
 });
@@ -483,6 +523,8 @@ canvas.addEventListener('mousedown', ev => {
     canvas.style.cursor = 'grabbing';
   }
 });
+
+
 
 canvas.addEventListener('mousemove', ev => {
   if (!isPanning) return;
