@@ -28,6 +28,8 @@ const handBtn = document.getElementById('handBtn');
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; // 20% per click
+const lockBgChk = document.getElementById('lockBgChk');
+
 
 
 
@@ -115,6 +117,23 @@ function restoreState(obj){
 UndoRedo.onChangeSet(()=>{});
 function capture(){ UndoRedo.capture(snapshotState()); }
 
+//Lock Background Check
+const lockBgChk = document.getElementById('lockBgChk');
+
+lockBgChk.addEventListener('change', () => {
+  const bg = canvas.querySelector('#bgImage');
+  if (!bg) return;
+
+  if (lockBgChk.checked) {
+    bg.style.pointerEvents = 'none';
+    canvas.classList.add('bg-locked');
+  } else {
+    bg.style.pointerEvents = 'auto';
+    canvas.classList.remove('bg-locked');
+  }
+});
+
+
 // Background image
 uploadImage.addEventListener('change', ev=>{
   const file = ev.target.files[0];
@@ -168,6 +187,39 @@ document.getElementById('removeBgBtn').addEventListener('click', () => {
   if (!bgImage) return;
   if (!confirm('Remove background image?')) return;
   removeBackgroundImage();
+});
+
+const fitBtn = document.getElementById('fitBtn');
+
+fitBtn.addEventListener('click', () => {
+  if (!bgImage) return;
+
+  viewBox.x = 0;
+  viewBox.y = 0;
+  viewBox.w = bgImage.width;
+  viewBox.h = bgImage.height;
+
+  canvas.setAttribute(
+    'viewBox',
+    `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
+  );
+
+  canvas.dataset.zoom = 1;
+});
+
+const resetZoomBtn = document.getElementById('resetZoomBtn');
+
+resetZoomBtn.addEventListener('click', () => {
+  canvas.dataset.zoom = 1;
+
+  if (bgImage) {
+    viewBox.x = 0;
+    viewBox.y = 0;
+    viewBox.w = bgImage.width;
+    viewBox.h = bgImage.height;
+  }
+
+  updateViewBox();
 });
 
 
