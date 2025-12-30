@@ -29,12 +29,25 @@ const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; // 20% per click
 const lockBgChk = document.getElementById('lockBgChk');
 
+// ===== THEME HANDLING =====
 const themeToggle = document.getElementById('themeToggle');
-themeToggle.addEventListener('click', () => {
-  const html = document.documentElement;
-  const isDark = html.getAttribute('data-theme') === 'dark';
 
-  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('mgss_theme', theme);
+}
+
+// init theme on load
+(function initTheme() {
+  const savedTheme = localStorage.getItem('mgss_theme') || 'light';
+  applyTheme(savedTheme);
+})();
+
+// toggle theme
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
 });
 
 
@@ -52,17 +65,6 @@ let tempLine = null, tempCursor = null, edgePreviewDot = null, bgImage = null;
 let handles = [];
 let draggingHandle = null, dragOffset = [0,0];
 
-// theme
-(function initTheme(){
-  const saved = localStorage.getItem('mgss_theme') || 'light';
-  if(saved === 'dark') document.documentElement.setAttribute('data-theme','dark');
-})();
-themeToggle.onclick = () => {
-  const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-  const next = cur === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('mgss_theme', next);
-};
 
 // mode buttons
 polyBtn.onclick = ()=> setMode('polygon');
