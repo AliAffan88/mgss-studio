@@ -6,22 +6,27 @@
   <title>MGSS Studio v4</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-  <div style="
-  position: fixed;
-  bottom: 8px;
-  right: 8px;
-  font-size: 12px;
-  opacity: 0.6;
-  background: #000;
-  color: #fff;
-  padding: 4px 8px;
-  border-radius: 4px;
-">
-  MGSS Studio v4
-</div>
 
 <body>
+  <!-- version badge -->
+  <div style="
+    position: fixed;
+    bottom: 8px;
+    right: 8px;
+    font-size: 12px;
+    opacity: 0.6;
+    background: #000;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    z-index: 999;
+  ">
+    MGSS Studio v4
+  </div>
+
   <div id="app">
+
+    <!-- LEFT TOOLBAR -->
     <aside id="toolbar">
       <div class="brand">
         <strong>MGSS Studio v4</strong>
@@ -31,29 +36,44 @@
       <div class="section">
         <div class="section-title">Modes</div>
         <div class="tools">
-          <button id="polyBtn" class="modeBtn active">Polygon Mode</button>
-          <button id="bezierBtn" class="modeBtn">Bezier Mode</button>
+          <button id="polyBtn" class="modeBtn active">Polygon</button>
+          <button id="bezierBtn" class="modeBtn">Bezier</button>
           <button id="selectBtn" class="modeBtn">Select</button>
           <button id="handBtn" class="modeBtn">Hand</button>
-          <button id="removeBgBtn" class="actionBtn">Remove Background</button>
-          <button id="zoomInBtn">+</button>
-          <button id="zoomOutBtn">−</button>
-          <button id="resetZoomBtn" class="actionBtn">Reset Zoom</button>
-          <button id="fitBtn" class="actionBtn">Fit to Screen</button>
         </div>
       </div>
 
       <div class="section">
+        <div class="section-title">View</div>
+        <button id="zoomInBtn">Zoom In</button>
+        <button id="zoomOutBtn">Zoom Out</button>
+        <button id="resetZoomBtn">Reset Zoom</button>
+        <button id="fitBtn">Fit to Screen</button>
+      </div>
+
+      <div class="section">
         <div class="section-title">Image / Export</div>
-        <label class="file-label">Background Image
+
+        <label class="file-label">
+          Background Image
           <input id="uploadImage" type="file" accept="image/*"/>
         </label>
-        <label> <input type="checkbox" id="lockBgChk">Lock Background</label>
-        <label class="export-opt"><input id="includeImage" type="checkbox" /> Include image in full export</label>
-        <div style="display:flex;gap:6px;">
+
+        <label style="display:block;margin-top:6px;">
+          <input type="checkbox" id="lockBgChk" />
+          Lock Background
+        </label>
+
+        <label style="display:block;margin-top:6px;">
+          <input type="checkbox" id="includeImage" />
+          Include image in full export
+        </label>
+
+        <div style="display:flex;gap:6px;margin-top:8px;">
           <button id="exportPowerBI" class="actionBtn">Export (Power BI)</button>
           <button id="exportFull" class="actionBtn">Export Full</button>
         </div>
+
         <div style="margin-top:6px;font-size:12px;color:#666">
           <input id="autosave" type="checkbox" /> Auto-save project
         </div>
@@ -61,49 +81,49 @@
 
       <div class="section">
         <div class="section-title">Actions</div>
-        <button id="undoBtn">Undo (Ctrl+Z)</button>
-        <button id="redoBtn">Redo (Ctrl+Y)</button>
-        <button id="saveProjectBtn">Save Project (.mgss.json)</button>
+        <button id="undoBtn">Undo</button>
+        <button id="redoBtn">Redo</button>
+        <button id="saveProjectBtn">Save Project</button>
         <input id="loadProjectFile" type="file" accept=".mgss.json" />
       </div>
 
       <div class="section small">
         <div class="section-title">Defaults</div>
-        <div>
-          Default Fill: <input type="color" id="defaultColor" value="#bfbfbf" />
-          Opacity: <input type="range" id="defaultOpacity" min="0" max="1" step="0.05" value="0.3" />
-        </div>
-      </div>
-
-      <div class="section tips">
-        <div class="section-title">Tips</div>
-        <ul>
-          <li>Click to add point. Click+drag to create a curved segment.</li>
-          <li>Double-click or Enter to finish a region.</li>
-          <li>ESC or Backspace removes last point (step undo).</li>
-          <li>Shift+click near edge to insert vertex (edge-hover preview shows dot).</li>
-          <li>Select region → drag handles to edit vertices. Right-click handle to remove vertex.</li>
-        </ul>
+        <label>
+          Default Fill
+          <input type="color" id="defaultColor" value="#bfbfbf" />
+        </label>
+        <label>
+          Opacity
+          <input type="range" id="defaultOpacity" min="0" max="1" step="0.05" value="0.3" />
+        </label>
       </div>
     </aside>
 
+    <!-- CANVAS -->
     <main id="main">
       <div id="canvasWrapper">
         <svg id="svgCanvas" xmlns="http://www.w3.org/2000/svg"></svg>
       </div>
     </main>
 
+    <!-- RIGHT PANEL -->
     <aside id="sidepanel">
       <div class="section">
         <div class="section-title">Region Properties</div>
+
         <label>Region ID</label>
         <input id="regionID" placeholder="Auto-generated" />
+
         <label>Data Field</label>
         <input id="regionField" placeholder="e.g. Sales, Revenue" />
+
         <label>Fill Color</label>
         <input id="fillColor" type="color" />
+
         <label>Opacity</label>
         <input id="fillOpacity" type="range" min="0" max="1" step="0.05" />
+
         <div style="display:flex;gap:6px;margin-top:6px;">
           <button id="renameBtn">Apply Rename</button>
           <button id="centerBtn">Center</button>
@@ -114,17 +134,20 @@
         <div class="section-title">Regions</div>
         <ul id="regionList"></ul>
       </div>
-    </aside>
-  </div>
+
+      <!-- MOVED TIPS HERE -->
       <div class="section tips">
         <div class="section-title">Tips</div>
-          <ul>
-          <li>Click to add point. Click+drag for curve.</li>
-          <li>Double-click or Enter to finish region.</li>
-          <li>ESC or Backspace removes last point.</li>
-          <li>Shift+click near edge to insert vertex.</li>
-          <li>Right-click handle to remove vertex.</li>
+        <ul>
+          <li>Click to add points</li>
+          <li>Double-click or Enter to finish</li>
+          <li>ESC removes last point</li>
+          <li>Shift + click to insert vertex</li>
+          <li>Right-click handle to delete vertex</li>
         </ul>
+      </div>
+    </aside>
+
   </div>
 
   <!-- scripts -->
@@ -134,4 +157,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-
