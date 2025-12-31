@@ -123,67 +123,87 @@
     </main>
 
     <!-- RIGHT PANEL -->
-    <aside id="sidepanel">
-      <div class="section">
-        <div class="section-title">Region Properties</div>
+<aside id="sidepanel">
 
-        <label>Region ID</label>
-        <input id="regionID" placeholder="Auto-generated" />
+  <!-- REGION PROPERTIES -->
+  <div class="section collapsible open" id="regionPropsSection">
+    <div class="section-title collapsible-header">
+      Region Properties
+      <span class="chevron">▾</span>
+    </div>
 
-        <label>Data Field</label>
-        <input id="regionField" placeholder="e.g. Sales, Revenue" />
+    <div class="collapsible-body">
+      <label>Region ID</label>
+      <input id="regionID" placeholder="Auto-generated" />
 
-        <label>Fill Color</label>
-        <input id="fillColor" type="color" />
+      <label>Data Field</label>
+      <input id="regionField" placeholder="e.g. Sales, Revenue" />
 
-        <label>Opacity</label>
-        <input id="fillOpacity" type="range" min="0" max="1" step="0.05" />
+      <label>Fill Color</label>
+      <input id="fillColor" type="color" />
 
-        <div style="display:flex;gap:6px;margin-top:6px;">
-          <button id="renameBtn">Apply Rename</button>
-          <button id="centerBtn">Center</button>
-        </div>
+      <label>Opacity</label>
+      <input id="fillOpacity" type="range" min="0" max="1" step="0.05" />
+
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button id="renameBtn">Apply Rename</button>
+        <button id="centerBtn">Center</button>
       </div>
+    </div>
+  </div>
 
-      <div class="section">
-        <div class="section-title">Regions</div>
-        <ul id="regionList"></ul>
-      </div>
+  <!-- REGIONS LIST -->
+  <div class="section collapsible open">
+    <div class="section-title collapsible-header">
+      Regions
+      <span class="chevron">▾</span>
+    </div>
 
-      <!-- GLOBAL SYNOPTIC SETTINGS -->
-      <div class="section">
-        <div class="section-title">Synoptic Settings</div>
+    <div class="collapsible-body">
+      <ul id="regionList"></ul>
+    </div>
+  </div>
 
-        <label>Default Region Color</label>
-        <input type="color" id="synDefaultColor" value="#bfbfbf" />
+  <!-- SYNOPTIC SETTINGS -->
+  <div class="section collapsible">
+    <div class="section-title collapsible-header">
+      Synoptic Settings
+      <span class="chevron">▾</span>
+    </div>
 
-        <label>Default Opacity</label>
-        <input
-          type="range"
-          id="synDefaultOpacity"
-          min="0"
-          max="1"
-          step="0.05"
-          value="0.3"
-            />
+    <div class="collapsible-body">
+      <label>Default Region Color</label>
+      <input type="color" id="synDefaultColor" value="#bfbfbf" />
 
-        <label>Hover Color</label>
-        <input type="color" id="synHoverColor" value="#ff9900" />
+      <label>Default Opacity</label>
+      <input
+        type="range"
+        id="synDefaultOpacity"
+        min="0"
+        max="1"
+        step="0.05"
+        value="0.3"
+      />
 
-        <label>Selection Mode</label>
-        <select id="synSelectionMode">
-          <option value="single">Single</option>
-          <option value="multi" selected>Multiple</option>
-        </select>
+      <label>Hover Color</label>
+      <input type="color" id="synHoverColor" value="#ff9900" />
 
-        <label>Tooltip Mode</label>
-        <select id="synTooltipMode">
-          <option value="measure">Measure Only</option>
-          <option value="detailed" selected>Detailed</option>
-        </select>
-      </div>
-    </aside>
+      <label>Selection Mode</label>
+      <select id="synSelectionMode">
+        <option value="single">Single</option>
+        <option value="multi" selected>Multiple</option>
+      </select>
 
+      <label>Tooltip Mode</label>
+      <select id="synTooltipMode">
+        <option value="measure">Measure Only</option>
+        <option value="detailed" selected>Detailed</option>
+      </select>
+    </div>
+  </div>
+
+</aside>
+    
   </div>
 
   <!-- scripts -->
