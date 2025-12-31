@@ -1,7 +1,8 @@
-// app.js - MGSS Studio v3 main
+// app.js - MGSS Studio v4 main
 // Full-featured version with Synoptic-compatible export
 // Depends on undoRedo.js, projectIO.js, svgExport.js
 
+const regionFieldInput = document.getElementById('regionField');
 const svgNS = "http://www.w3.org/2000/svg";
 const canvas = document.getElementById('svgCanvas');
 const polyBtn = document.getElementById('polyBtn');
@@ -19,10 +20,41 @@ const defaultColorInput = document.getElementById('defaultColor');
 const defaultOpacityInput = document.getElementById('defaultOpacity');
 const saveProjectBtn = document.getElementById('saveProjectBtn');
 const loadProjectFile = document.getElementById('loadProjectFile');
+const themeToggle = document.getElementById('themeToggle');
 const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 const autosaveCheckbox = document.getElementById('autosave');
-const themeToggle = document.getElementById('themeToggle');
+const handBtn = document.getElementById('handBtn');
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 10;
+const ZOOM_STEP = 1.1; // 20% per click
+const lockBgChk = document.getElementById('lockBgChk');
+
+// ===== THEME HANDLING =====
+//const themeToggle = document.getElementById('themeToggle');
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('mgss_theme', theme);
+}
+
+// init theme on load
+(function initTheme() {
+  const savedTheme = localStorage.getItem('mgss_theme') || 'light';
+  applyTheme(savedTheme);
+})();
+
+// toggle theme
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+});
+
+
+let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
 
 let mode = 'polygon';
 let drawing = false;
@@ -34,29 +66,22 @@ let tempLine = null, tempCursor = null, edgePreviewDot = null, bgImage = null;
 let handles = [];
 let draggingHandle = null, dragOffset = [0,0];
 
-// theme
-(function initTheme(){
-  const saved = localStorage.getItem('mgss_theme') || 'light';
-  if(saved === 'dark') document.documentElement.setAttribute('data-theme','dark');
-})();
-themeToggle.onclick = () => {
-  const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-  const next = cur === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('mgss_theme', next);
-};
 
 // mode buttons
 polyBtn.onclick = ()=> setMode('polygon');
 bezierBtn.onclick = ()=> setMode('bezier');
 selectBtn.onclick = ()=> setMode('select');
+handBtn.onclick = () => setMode('hand');
+
 
 function setMode(m){
   mode = m;
+  document.body.classList.toggle('mode-hand', m === 'hand');
   document.querySelectorAll('.modeBtn').forEach(b=>b.classList.remove('active'));
   if(m==='polygon') polyBtn.classList.add('active');
   if(m==='bezier') bezierBtn.classList.add('active');
   if(m==='select') selectBtn.classList.add('active');
+  if(m === 'hand') handBtn.classList.add('active');
   deselect();
 }
 
@@ -69,7 +94,8 @@ function snapshotState(){
       id: r.id,
       points: r.points.map(p=>({x:p.x,y:p.y,curve:p.curve?true:false,cx:p.cx||null,cy:p.cy||null})),
       color: r.color,
-      opacity: r.opacity
+      opacity: r.opacity,
+      field: r.field || ''
     });
   });
   return obj;
@@ -83,17 +109,35 @@ function restoreState(obj){
       id, 
       points: rr.points.map(p=>({x:p.x,y:p.y,curve:!!p.curve,cx:p.cx||null,cy:p.cy||null})), 
       color: rr.color||defaultColorInput.value, 
-      opacity: rr.opacity!=null?rr.opacity:parseFloat(defaultOpacityInput.value)
+      opacity: rr.opacity!=null?rr.opacity:parseFloat(defaultOpacityInput.value),
+      field: rr.field || ''
     };
     createRegionElement(r);
     regions.set(id,r);
   });
+  if (r.field) {
+  r.element.setAttribute('data-field', r.field);
+}
   updateRegionList();
 }
 
 // initial capture
 UndoRedo.onChangeSet(()=>{});
 function capture(){ UndoRedo.capture(snapshotState()); }
+
+lockBgChk.addEventListener('change', () => {
+  const bg = canvas.querySelector('#bgImage');
+  if (!bg) return;
+
+  if (lockBgChk.checked) {
+    bg.style.pointerEvents = 'none';
+    canvas.classList.add('bg-locked');
+  } else {
+    bg.style.pointerEvents = 'auto';
+    canvas.classList.remove('bg-locked');
+  }
+});
+
 
 // Background image
 uploadImage.addEventListener('change', ev=>{
@@ -118,7 +162,7 @@ function loadBackgroundFromData(href,imgW,imgH){
   canvas.setAttribute('viewBox',`0 0 ${imgW} ${imgH}`);
   canvas.setAttribute('width',imgW);
   canvas.setAttribute('height',imgH);
-  canvas.removeAttribute('preserveAspectRatio');
+  canvas.setAttribute('preserveAspectRatio', 'xMidYMid meet');
   const img = document.createElementNS(svgNS,'image');
   img.setAttribute('id','bgImage');
   img.setAttribute('x',0); img.setAttribute('y',0);
@@ -127,10 +171,72 @@ function loadBackgroundFromData(href,imgW,imgH){
   img.style.pointerEvents='none';
   canvas.insertBefore(img,canvas.firstChild);
   bgImage = { href, width:imgW, height:imgH };
+  viewBox = { x: 0, y: 0, w: imgW, h: imgH };
 }
+
+function removeBackgroundImage() {
+  const old = canvas.querySelector('#bgImage');
+  if (old) old.remove();
+
+  bgImage = null;
+
+  // Reset viewBox to a safe default
+  canvas.setAttribute('viewBox', '0 0 1000 700');
+  canvas.setAttribute('width', 1000);
+  canvas.setAttribute('height', 700);
+
+  viewBox = { x: 0, y: 0, w: 1000, h: 700 };
+}
+
+\\document.getElementById('removeBgBtn').addEventListener('click', () => {
+\\  if (!bgImage) return;
+\\  if (!confirm('Remove background image?')) return;
+\\  removeBackgroundImage();
+\\});
+
+const fitBtn = document.getElementById('fitBtn');
+
+fitBtn.addEventListener('click', () => {
+  if (!bgImage) return;
+
+  viewBox.x = 0;
+  viewBox.y = 0;
+  viewBox.w = bgImage.width;
+  viewBox.h = bgImage.height;
+
+  canvas.setAttribute(
+    'viewBox',
+    `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
+  );
+
+  canvas.dataset.zoom = 1;
+});
+
+const resetZoomBtn = document.getElementById('resetZoomBtn');
+
+resetZoomBtn.addEventListener('click', () => {
+  canvas.dataset.zoom = 1;
+
+  if (bgImage) {
+    viewBox.x = 0;
+    viewBox.y = 0;
+    viewBox.w = bgImage.width;
+    viewBox.h = bgImage.height;
+  }
+
+  updateViewBox();
+});
+
 
 // Mouse events
 canvas.addEventListener('mousedown', ev=>{
+  if (mode === 'hand') {
+  isPanning = true;
+  panStart = { x: ev.clientX, y: ev.clientY };
+  canvas.style.cursor = 'grabbing';
+  return;
+}
+
   if(ev.target.classList && ev.target.classList.contains('handle')) return;
   const {x:svgX,y:svgY} = clientToSvg(ev); // use precise SVG coordinates
   if(mode==='polygon'||mode==='bezier'){
@@ -149,6 +255,18 @@ canvas.addEventListener('mousedown', ev=>{
 });
 
 canvas.addEventListener('mousemove', ev=>{
+  if (isPanning) {
+  const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
+  const dy = (ev.clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
+
+  viewBox.x -= dx;
+  viewBox.y -= dy;
+
+  panStart = { x: ev.clientX, y: ev.clientY };
+  updateViewBox();
+  return;
+}
+
   const {x,y} = clientToSvg(ev);
   if(drawing){ updateTempLine(x,y); showTempCursor(x,y); }
   if(selected && !drawing){
@@ -192,7 +310,7 @@ function clientToSvg(ev) {
 
 function startRegion(x,y){
   const id = generateId();
-  current = { id, points:[{x:Math.round(x),y:Math.round(y),curve:false}], element:null, color:defaultColorInput.value, opacity:parseFloat(defaultOpacityInput.value) };
+  current = { id, points:[{x:Math.round(x),y:Math.round(y),curve:false}], field: '', element:null, color:defaultColorInput.value, opacity:parseFloat(defaultOpacityInput.value) };
   createRegionElement(current);
   drawing=true;
   showTempCursor(x,y);
@@ -204,6 +322,13 @@ function addPoint(x,y,curve=false,cx=null,cy=null){
   if(curve&&cx!=null&&cy!=null){p.cx=Math.round(cx); p.cy=Math.round(cy);}
   current.points.push(p);
   updateRegionElement(current);
+}
+
+function updateViewBox() {
+  canvas.setAttribute(
+    'viewBox',
+    `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
+  );
 }
 
 function updateTempLine(x,y){
@@ -275,10 +400,11 @@ function selectRegion(r){
   deselect();
   selected=r;
   r.element.classList.add('selected');
+  regionFieldInput.value = r.field || '';
   regionIDInput.value=r.id;
   fillColorInput.value=r.color||defaultColorInput.value;
   fillOpacityInput.value=r.opacity!=null?r.opacity:defaultOpacityInput.value;
-  createHandles(r);
+  recreateHandles(r);
 }
 function deselect(){ if(selected){ selected.element.classList.remove('selected'); removeHandles(); } selected=null; regionIDInput.value=''; fillColorInput.value='#000000'; fillOpacityInput.value=0; }
 
@@ -376,6 +502,46 @@ function deleteRegion(id){
   updateRegionList(); capture();
 }
 
+function applyZoom(factor, centerX, centerY) {
+  const vb = canvas.viewBox.baseVal;
+
+  let newW = vb.width / factor;
+  let newH = vb.height / factor;
+
+  const currentZoom = canvas.dataset.zoom
+    ? parseFloat(canvas.dataset.zoom)
+    : 1;
+
+  let nextZoom = currentZoom * factor;
+  if (nextZoom < MIN_ZOOM || nextZoom > MAX_ZOOM) return;
+
+  const dx = (centerX - vb.x) / vb.width;
+  const dy = (centerY - vb.y) / vb.height;
+
+  vb.x += vb.width * dx - newW * dx;
+  vb.y += vb.height * dy - newH * dy;
+  vb.width = newW;
+  vb.height = newH;
+
+  canvas.dataset.zoom = nextZoom;
+  function updateZoomButtons() {
+  const z = parseFloat(canvas.dataset.zoom || 1);
+  zoomInBtn.disabled = z >= MAX_ZOOM;
+  zoomOutBtn.disabled = z <= MIN_ZOOM;
+}
+}
+
+zoomInBtn.addEventListener('click', () => {
+  const vb = canvas.viewBox.baseVal;
+  applyZoom(ZOOM_STEP, vb.x + vb.width / 2, vb.y + vb.height / 2);
+});
+
+zoomOutBtn.addEventListener('click', () => {
+  const vb = canvas.viewBox.baseVal;
+  applyZoom(1 / ZOOM_STEP, vb.x + vb.width / 2, vb.y + vb.height / 2);
+});
+
+
 // clear all
 function clearAllRegions(){ regions.forEach(r=>{ if(r.element&&r.element.parentNode) r.element.parentNode.removeChild(r.element); }); regions.clear(); removeHandles(); selected=null; }
 
@@ -390,11 +556,123 @@ function updateRegionList(){
 }
 
 // property updates
+canvas.addEventListener('wheel', ev => {
+  ev.preventDefault();
+
+  const factor = ev.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
+  const pt = clientToSvg(ev);
+
+  applyZoom(factor, pt.x, pt.y);
+});
+
+document.addEventListener('keydown', ev => {
+  if (ev.code === 'Space') canvas.style.cursor = 'grab';
+});
+
+document.addEventListener('keyup', ev => {
+  if (ev.code === 'Space') canvas.style.cursor = 'default';
+});
+
+canvas.addEventListener('mousedown', ev => {
+  if (ev.code === 'Space' || ev.button === 1) {
+    isPanning = true;
+    panStart = { x: ev.clientX, y: ev.clientY };
+    canvas.style.cursor = 'grabbing';
+  }
+});
+
+
+
+canvas.addEventListener('mousemove', ev => {
+  if (!isPanning) return;
+
+  const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
+  const dy = (ev.clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
+
+  viewBox.x -= dx;
+  viewBox.y -= dy;
+
+  panStart = { x: ev.clientX, y: ev.clientY };
+  updateViewBox();
+});
+
+document.addEventListener('mouseup', () => {
+  isPanning = false;
+  canvas.style.cursor = 'default';
+});
+
+
 fillColorInput.addEventListener('input',()=>{ if(selected){ selected.color=fillColorInput.value; updateRegionElement(selected); capture(); } });
 fillOpacityInput.addEventListener('input',()=>{ if(selected){ selected.opacity=parseFloat(fillOpacityInput.value); updateRegionElement(selected); capture(); } });
+regionFieldInput.addEventListener('input', () => {
+  if (!selected) return;
+
+  selected.field = regionFieldInput.value.trim();
+
+  if (selected.field) {
+    selected.element.setAttribute('data-field', selected.field);
+  } else {
+    selected.element.removeAttribute('data-field');
+  }
+
+  capture();
+});
+//regionFieldInput.addEventListener('input', () => {if (!selected) return; selected.field = regionFieldInput.value.trim(); if (selected.element) {
+//    if (selected.field) {
+ //     selected.element.setAttribute('data-field', selected.field);
+ //   } else {
+ //     selected.element.removeAttribute('data-field');
+ //   }
+//  } 
+regionIDInput.addEventListener('input', () => {
+  if (!selected) return;
+
+  const newId = regionIDInput.value.trim();
+  if (!newId) return;
+
+  if (regions.has(newId) && newId !== selected.id) {
+    alert("Region ID already exists");
+    regionIDInput.value = selected.id;
+    return;
+  }
+
+  const oldId = selected.id;
+
+  // update Map key
+  regions.delete(oldId);
+  selected.id = newId;
+  regions.set(newId, selected);
+
+  // update SVG
+  selected.element.setAttribute('id', newId);
+
+  updateRegionList();
+  capture();
+});
 
 // export
-exportPowerBI.addEventListener('click',()=>{ const svgStr=buildCleanSVGFragment([...regions.values()].map(r=>{ return { tag:r.points.some(p=>p.curve)?'path':'polygon', id:r.id, attr:{ points:r.points.map(p=>`${p.x},${p.y}`).join(' '), d:r.points.some(p=>p.curve)?createPathD(r):'', fill:r.color, 'fill-opacity':r.opacity, stroke:'black', 'stroke-width':'1.5' } }; }),canvas.viewBox.baseVal.width, canvas.viewBox.baseVal.height,bgImage); downloadSVG(svgStr,'mgss_full.svg'); });
+exportPowerBI.addEventListener('click', () => {
+  const svgStr = buildCleanSVGFragment(
+    [...regions.values()].map(r => ({
+      tag: r.points.some(p => p.curve) ? 'path' : 'polygon',
+      id: r.id,
+      attr: {
+        points: r.points.map(p => `${p.x},${p.y}`).join(' '),
+        d: r.points.some(p => p.curve) ? createPathD(r) : '',
+        fill: r.color,
+        'fill-opacity': r.opacity,
+        'data-field': r.field || '',
+        stroke: 'black',
+        'stroke-width': '1.5'
+      }
+    })),
+    canvas.viewBox.baseVal.width,
+    canvas.viewBox.baseVal.height,
+    bgImage
+  );
+
+  downloadSVG(svgStr, 'mgss_full.svg');
+});
 exportFull.addEventListener('click',()=>{ const svgStr=canvas.outerHTML; downloadSVG(svgStr,'mgss_full_raw.svg'); });
 
 function createPathD(r){ const pts=r.points; let d=`M ${pts[0].x} ${pts[0].y}`; for(let i=1;i<pts.length;i++){ const p=pts[i]; if(p.curve&&p.cx!=null&&p.cy!=null) d+=` Q ${p.cx} ${p.cy} ${p.x} ${p.y}`; else d+=` L ${p.x} ${p.y}`; } return d+' Z'; }
