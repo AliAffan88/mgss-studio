@@ -211,3 +211,28 @@ path.selected {
     display:none;
   }
 }
+/* Collapsible panels */
+.collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapsible .chevron {
+  transition: transform 0.2s ease;
+  font-size: 12px;
+}
+
+.collapsible:not(.open) .chevron {
+  transform: rotate(-90deg);
+}
+
+.collapsible-body {
+  margin-top: 8px;
+}
+
+.collapsible:not(.open) .collapsible-body {
+  display: none;
+}
