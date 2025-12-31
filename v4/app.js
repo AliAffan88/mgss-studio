@@ -397,6 +397,8 @@ function attachRegionEvents(region){ if(region.element) region.element.addEventL
 
 // region selection / handles
 function selectRegion(r){
+  const props = document.getElementById('regionPropsSection');
+  if (props) props.classList.add('open');
   deselect();
   selected=r;
   r.element.classList.add('selected');
@@ -709,6 +711,14 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
+// Collapsible right panel logic
+document.querySelectorAll('.collapsible-header').forEach(header => {
+  header.addEventListener('click', () => {
+    const section = header.closest('.collapsible');
+    section.classList.toggle('open');
+  });
+});
 
 
 
