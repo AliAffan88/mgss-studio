@@ -125,6 +125,9 @@ function restoreState(obj){
 UndoRedo.onChangeSet(()=>{});
 function capture(){ UndoRedo.capture(snapshotState()); }
 
+//Lock Background Check
+const lockBgChk = document.getElementById('lockBgChk');
+
 lockBgChk.addEventListener('change', () => {
   const bg = canvas.querySelector('#bgImage');
   if (!bg) return;
@@ -188,11 +191,11 @@ function removeBackgroundImage() {
   viewBox = { x: 0, y: 0, w: 1000, h: 700 };
 }
 
-\\document.getElementById('removeBgBtn').addEventListener('click', () => {
-\\  if (!bgImage) return;
-\\  if (!confirm('Remove background image?')) return;
-\\  removeBackgroundImage();
-\\});
+document.getElementById('removeBgBtn').addEventListener('click', () => {
+  if (!bgImage) return;
+  if (!confirm('Remove background image?')) return;
+  removeBackgroundImage();
+});
 
 const fitBtn = document.getElementById('fitBtn');
 
