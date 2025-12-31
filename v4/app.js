@@ -5,7 +5,6 @@
 const regionFieldInput = document.getElementById('regionField');
 const svgNS = "http://www.w3.org/2000/svg";
 const canvas = document.getElementById('svgCanvas');
-const canvasWrapper = document.getElementById('canvasWrapper');
 const polyBtn = document.getElementById('polyBtn');
 const bezierBtn = document.getElementById('bezierBtn');
 const selectBtn = document.getElementById('selectBtn');
@@ -54,7 +53,6 @@ themeToggle.addEventListener('click', () => {
 
 
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
-let bgImage = null;
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
 
@@ -128,6 +126,8 @@ UndoRedo.onChangeSet(()=>{});
 function capture(){ UndoRedo.capture(snapshotState()); }
 
 //Lock Background Check
+const lockBgChk = document.getElementById('lockBgChk');
+
 lockBgChk.addEventListener('change', () => {
   const bg = canvas.querySelector('#bgImage');
   if (!bg) return;
@@ -304,9 +304,12 @@ function clientToSvg(ev) {
   const pt = canvas.createSVGPoint();
   pt.x = ev.clientX;
   pt.y = ev.clientY;
-  return pt.matrixTransform(canvas.getScreenCTM().inverse());
+  const svgPt = pt.matrixTransform(canvas.getScreenCTM().inverse());
+  return {
+    x: svgPt.x,
+    y: svgPt.y
+  };
 }
-
 
 function startRegion(x,y){
   const id = generateId();
@@ -556,14 +559,14 @@ function updateRegionList(){
 }
 
 // property updates
-// canvas.addEventListener('wheel', ev => {
-//  ev.preventDefault();
+canvas.addEventListener('wheel', ev => {
+  ev.preventDefault();
 
-//  const factor = ev.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
-//  const pt = clientToSvg(ev);
+  const factor = ev.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
+  const pt = clientToSvg(ev);
 
-//  applyZoom(factor, pt.x, pt.y);
-// });
+  applyZoom(factor, pt.x, pt.y);
+});
 
 document.addEventListener('keydown', ev => {
   if (ev.code === 'Space') canvas.style.cursor = 'grab';
@@ -697,36 +700,6 @@ autosaveCheckbox.addEventListener('change', ev=>{
 // UndoRedo
 undoBtn.addEventListener('click',()=>{ const s=UndoRedo.undo(); if(s) restoreState(s); });
 redoBtn.addEventListener('click',()=>{ const s=UndoRedo.redo(); if(s) restoreState(s); });
-
-// =====================
-// Mouse wheel zoom
-// =====================
-canvasWrapper.addEventListener('wheel', ev => {
-  ev.preventDefault();
-
-  if (!bgImage) return;
-
-  const zoomFactor = ev.deltaY > 0 ? 1.1 : 0.9;
-
-  const pt = clientToSvg(ev);
-
-  const newW = viewBox.w * zoomFactor;
-  const newH = viewBox.h * zoomFactor;
-
-  // zoom limits
-  const MIN_ZOOM = 100;
-  const MAX_ZOOM = bgImage.width * 3;
-
-  if (newW < MIN_ZOOM || newW > MAX_ZOOM) return;
-
-  viewBox.x = pt.x - (pt.x - viewBox.x) * zoomFactor;
-  viewBox.y = pt.y - (pt.y - viewBox.y) * zoomFactor;
-  viewBox.w = newW;
-  viewBox.h = newH;
-
-  updateViewBox();
-}, { passive: false });
-
 
 // helpers
 function projectPointToSegment(p,a,b){
