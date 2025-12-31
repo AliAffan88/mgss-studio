@@ -54,6 +54,7 @@ themeToggle.addEventListener('click', () => {
 
 
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
+let bgImage = null;
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
 
