@@ -30,6 +30,7 @@ const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; // 20% per click
 const lockBgChk = document.getElementById('lockBgChk');
 
+
 // ===== THEME HANDLING =====
 //const themeToggle = document.getElementById('themeToggle');
 
@@ -51,6 +52,8 @@ themeToggle.addEventListener('click', () => {
   applyTheme(next);
 });
 
+let isAltDown = false;
+let activeCurvePoint = null;
 
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
 let isPanning = false;
@@ -296,6 +299,18 @@ document.addEventListener('keydown', ev=>{
   else if(ev.key==='Delete'){ if(selected) deleteRegion(selected.id); }
 });
 
+document.addEventListener('keydown', e => {
+  if (e.key === 'Alt') isAltDown = true;
+});
+
+document.addEventListener('keyup', e => {
+  if (e.key === 'Alt') {
+    isAltDown = false;
+    activeCurvePoint = null;
+  }
+});
+
+
 // helpers
 function clientToSvg(ev) {
   const pt = canvas.createSVGPoint();
@@ -316,13 +331,22 @@ function startRegion(x,y){
   showTempCursor(x,y);
 }
 
-function addPoint(x,y,curve=false,cx=null,cy=null){
-  if(!current) return;
-  const p={x:Math.round(x),y:Math.round(y),curve:!!curve};
-  if(curve&&cx!=null&&cy!=null){p.cx=Math.round(cx); p.cy=Math.round(cy);}
+function addPoint(x, y) {
+  if (!current) return;
+
+  const p = {
+    x: Math.round(x),
+    y: Math.round(y),
+    curve: false,
+    cx: null,
+    cy: null
+  };
+
   current.points.push(p);
+  activeCurvePoint = p;
   updateRegionElement(current);
 }
+
 
 function updateViewBox() {
   canvas.setAttribute(
@@ -586,6 +610,18 @@ canvas.addEventListener('mousedown', ev => {
 
 
 canvas.addEventListener('mousemove', ev => {
+  if (drawing && mode === 'bezier' && isAltDown && activeCurvePoint) {
+  const pt = clientToSvg(ev);
+
+  activeCurvePoint.curve = true;
+  activeCurvePoint.cx = Math.round(pt.x);
+  activeCurvePoint.cy = Math.round(pt.y);
+
+  updateRegionElement(current);
+  return;
+}
+
+  
   if (!isPanning) return;
 
   const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
