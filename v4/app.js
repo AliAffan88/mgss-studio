@@ -463,6 +463,8 @@ function createHandles(r){
   r.points.forEach((p,idx)=>{
     const g=document.createElementNS(svgNS,'g'); g.classList.add('handle'); g.setAttribute('data-idx',idx);
     g.setAttribute('transform',`translate(${p.x},${p.y})`);
+    const currentZoom = parseFloat(canvas.dataset.zoom || 1);
+    const scaledRadius = 6 / currentZoom;
     const circ=document.createElementNS(svgNS,'circle'); circ.setAttribute('r',6); circ.setAttribute('cx',0); circ.setAttribute('cy',0);
     g.appendChild(circ);
     g.addEventListener('mousedown', ev=>{
@@ -573,6 +575,11 @@ function applyZoom(factor, centerX, centerY) {
   vb.height = newH;
 
   canvas.dataset.zoom = nextZoom;
+  const newRadius = 6 / nextZoom;
+  document.querySelectorAll('.handle circle').forEach(c => {
+    c.setAttribute('r', newRadius);
+  });
+  
   function updateZoomButtons() {
   const z = parseFloat(canvas.dataset.zoom || 1);
   zoomInBtn.disabled = z >= MAX_ZOOM;
