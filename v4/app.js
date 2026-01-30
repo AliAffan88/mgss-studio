@@ -288,6 +288,10 @@ canvas.addEventListener('mousemove', ev=>{
 canvas.addEventListener('dblclick', ev=>{ if(drawing) finalizeRegion(); });
 
 document.addEventListener('keydown', ev=>{
+  // NEW: Check if the user is typing in an input field
+  if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA') {
+    return; // Stop the function here so it doesn't delete the region
+  }
   if(ev.key==='Escape'||ev.key==='Backspace'){
     if(drawing){
       if(current.points.length>0){ current.points.pop(); if(current.points.length===0) cancelCurrent(); else updateRegionElement(current); }
