@@ -289,9 +289,8 @@ canvas.addEventListener('dblclick', ev=>{ if(drawing) finalizeRegion(); });
 
 document.addEventListener('keydown', ev => {
   // NEW: Check if the user is typing in an input field
-  if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA') {
-    return; // Stop the function here so it doesn't delete the region
-  }
+  const isTyping = ev.target.matches('input, textarea, select, [contenteditable="true"]');
+  if (isTyping) return;
 
   if (ev.key === 'Escape' || ev.key === 'Backspace') {
     if (drawing) {
@@ -616,6 +615,9 @@ canvas.addEventListener('wheel', ev => {
 });
 
 document.addEventListener('keydown', ev => {
+  const isTyping = ev.target.matches('input, textarea, select, [contenteditable="true"]');
+  if (isTyping) return;
+  
   if (ev.code === 'Space') canvas.style.cursor = 'grab';
 });
 
