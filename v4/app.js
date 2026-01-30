@@ -241,7 +241,8 @@ canvas.addEventListener('mousedown', ev=>{
 }
 
   if(ev.target.classList && ev.target.classList.contains('handle')) return;
-  const {x:svgX,y:svgY} = clientToSvg(ev); // use precise SVG coordinates
+  const raw = clientToSvg(ev);
+  const {x: svgX, y: svgY} = getSnappedPoint(raw.x, raw.y); // Apply Snap // use precise SVG coordinates
   if(mode==='polygon'||mode==='bezier'){
     if(!drawing){
       // start exactly at mouse cursor
@@ -270,7 +271,8 @@ canvas.addEventListener('mousemove', ev=>{
   return;
 }
 
-  const {x,y} = clientToSvg(ev);
+  const raw = clientToSvg(ev);
+  const {x, y} = getSnappedPoint(raw.x, raw.y); // Apply Snap
   if(drawing){ updateTempLine(x,y); showTempCursor(x,y); }
   if(selected && !drawing){
     const near = findClosestEdge(selected,x,y);
