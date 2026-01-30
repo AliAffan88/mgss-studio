@@ -814,6 +814,29 @@ function projectPointToSegment(p,a,b){
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
 
+// Threshold in SVG pixels. If mouse is within 10px of a vertex, it snaps.
+const SNAP_THRESHOLD = 10; 
+
+function getSnappedPoint(svgX, svgY) {
+  let bestPoint = { x: svgX, y: svgY };
+  let minDistance = SNAP_THRESHOLD;
+
+  // Look through every point in every region
+  regions.forEach(region => {
+    // Don't snap to the region we are currently drawing
+    if (drawing && current && region.id === current.id) return;
+
+    region.points.forEach(p => {
+      const d = distance(svgX, svgY, p.x, p.y);
+      if (d < minDistance) {
+        minDistance = d;
+        bestPoint = { x: p.x, y: p.y };
+      }
+    });
+  });
+
+  return bestPoint;
+}
 // Collapsible right panel logic
 document.querySelectorAll('.collapsible-header').forEach(header => {
   header.addEventListener('click', () => {
