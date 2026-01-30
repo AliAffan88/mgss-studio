@@ -202,6 +202,7 @@ path.selected {
   stroke: var(--text);
   stroke-width:1;
   fill: var(--btn-bg);
+  vector-effect: non-scaling-stroke;
 }
 
 /* responsive */
