@@ -287,20 +287,40 @@ canvas.addEventListener('mousemove', ev=>{
 
 canvas.addEventListener('dblclick', ev=>{ if(drawing) finalizeRegion(); });
 
-document.addEventListener('keydown', ev=>{
+document.addEventListener('keydown', ev => {
   // NEW: Check if the user is typing in an input field
   if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA') {
-  return; // Stop the function here so it doesn't delete the region
+    return; // Stop the function here so it doesn't delete the region
   }
-  if(ev.key==='Escape'||ev.key==='Backspace'){
-    if(drawing){
-      if(current.points.length>0){ current.points.pop(); if(current.points.length===0) cancelCurrent(); else updateRegionElement(current); }
-      removeTempLine(); removeTempCursor(); ev.preventDefault();
-    } else deselect();
-  } else if(ev.key==='Enter'){ if(drawing) finalizeRegion(); }
-  else if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='z'){ const s=UndoRedo.undo(); if(s) restoreState(s); }
-  else if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='y'){ const s=UndoRedo.redo(); if(s) restoreState(s); }
-  else if(ev.key==='Delete'){ if(selected) deleteRegion(selected.id); }
+
+  if (ev.key === 'Escape' || ev.key === 'Backspace') {
+    if (drawing) {
+      if (current.points.length > 0) {
+        current.points.pop();
+        if (current.points.length === 0) cancelCurrent();
+        else updateRegionElement(current);
+      }
+      removeTempLine();
+      removeTempCursor();
+      ev.preventDefault();
+    } else {
+      // Only delete via backspace if NOT typing
+      // (Optionally, you might want to remove Backspace as a delete key 
+      // for regions to prevent accidents)
+      if (ev.key === 'Backspace' && !drawing) return; 
+      deselect();
+    }
+  } else if (ev.key === 'Enter') {
+    if (drawing) finalizeRegion();
+  } else if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z') {
+    const s = UndoRedo.undo();
+    if (s) restoreState(s);
+  } else if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'y') {
+    const s = UndoRedo.redo();
+    if (s) restoreState(s);
+  } else if (ev.key === 'Delete') {
+    if (selected) deleteRegion(selected.id);
+  }
 });
 
 document.addEventListener('keydown', e => {
