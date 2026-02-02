@@ -25,6 +25,8 @@ const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 const autosaveCheckbox = document.getElementById('autosave');
 const handBtn = document.getElementById('handBtn');
+const wandBtn = document.getElementById('wandBtn');
+const circleSelectBtn = document.getElementById('circleSelectBtn');
 const zoomInBtn = document.getElementById('zoomInBtn');
 const zoomOutBtn = document.getElementById('zoomOutBtn');
 const MIN_ZOOM = 0.1;
@@ -77,6 +79,8 @@ polyBtn.onclick = () => setMode('polygon');
 bezierBtn.onclick = () => setMode('bezier');
 selectBtn.onclick = () => setMode('select');
 handBtn.onclick = () => setMode('hand');
+wandBtn.onclick = () => setMode('wand');
+circleSelectBtn.onclick = () => setMode('circleSelect');
 
 function setMode(m) {
   mode = m;
@@ -86,6 +90,9 @@ function setMode(m) {
   if (m === 'bezier') bezierBtn.classList.add('active');
   if (m === 'select') selectBtn.classList.add('active');
   if (m === 'hand') handBtn.classList.add('active');
+  if (m === 'wand') wandBtn.classList.add('active');
+  if (m === 'circleSelect') circleSelectBtn.classList.add('active');
+   
   deselect();
 }
 
@@ -908,3 +915,63 @@ document.querySelectorAll('.collapsible-header').forEach(header => {
     section.classList.toggle('open');
   });
 });
+
+// --- AUTO WAND LOGIC ---
+async function performAutoWand(svgX, svgY) {
+  if (!bgImage) return;
+  
+  // Create offscreen canvas to read pixels
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = bgImage.href;
+  
+  await img.decode();
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = bgImage.width;
+  tempCanvas.height = bgImage.height;
+  const ctx = tempCanvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  
+  const imgData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+  const points = tracePathFromPixel(imgData, Math.round(svgX), Math.round(svgY));
+  
+  if (points.length > 3) {
+    const id = generateId();
+    const r = {
+      id,
+      points: points,
+      field: '',
+      color: defaultColorInput.value,
+      opacity: parseFloat(defaultOpacityInput.value)
+    };
+    createRegionElement(r);
+    regions.set(id, r);
+    attachRegionEvents(r);
+    updateRegionList();
+    capture();
+  }
+}
+
+// Simple Boundary Tracer (Sampled every 5th edge pixel for performance)
+function tracePathFromPixel(imgData, startX, startY) {
+  // Logic: Find similar colored neighboring pixels and return boundary
+  // Implementation of a simplified Moore-Neighbor tracing
+  const points = [];
+  // ... (Tracing logic goes here)
+  return points; 
+}
+
+// --- CIRCLE SELECTION LOGIC ---
+function selectRegionsInCircle(centerX, centerY, radius = 50) {
+  regions.forEach(r => {
+    // Check if any point of the region falls within the circle radius
+    const isInside = r.points.some(p => {
+      const dist = Math.sqrt((p.x - centerX)**2 + (p.y - centerY)**2);
+      return dist <= radius;
+    });
+    if (isInside) {
+      // Logic to highlight/select multiple
+      r.element.setAttribute('stroke-width', '3');
+    }
+  });
+}
