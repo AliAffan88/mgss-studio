@@ -31,6 +31,13 @@ const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; 
 const lockBgChk = document.getElementById('lockBgChk');
+const wandThresholdInput = document.getElementById('wandThreshold');
+const thresholdValDisplay = document.getElementById('thresholdVal');
+
+// Update the number display when you move the slider
+wandThresholdInput.oninput = () => {
+  thresholdValDisplay.textContent = wandThresholdInput.value;
+};
 
 // Wand initialization
 let wandCanvas = document.createElement('canvas');
@@ -729,7 +736,7 @@ function autoTrace(startX, startY) {
   };
 
   const targetColor = getPixel(startX, startY);
-  const threshold = 40; 
+  const threshold = parseInt(wandThresholdInput.value); 
   let points = [];
   const rayCount = 40; 
 
