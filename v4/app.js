@@ -818,6 +818,40 @@ autosaveCheckbox.addEventListener('change', ev => {
 undoBtn.addEventListener('click', () => { const s = UndoRedo.undo(); if (s) restoreState(s); });
 redoBtn.addEventListener('click', () => { const s = UndoRedo.redo(); if (s) restoreState(s); });
 
+const frontBtn = document.getElementById('frontBtn');
+const backBtn = document.getElementById('backBtn');
+
+frontBtn.onclick = () => {
+  if (!selected || !selected.element) return;
+  // Moves the element to the bottom of the SVG list (renders on top)
+  canvas.appendChild(selected.element);
+  // Ensure handles stay on top of the moved element
+  bringHandlesToFront();
+  capture(); 
+};
+
+backBtn.onclick = () => {
+  if (!selected || !selected.element) return;
+  const bg = canvas.querySelector('#bgImage');
+  if (bg) {
+    // Places it right after the background so it's behind other polygons
+    bg.after(selected.element);
+  } else {
+    canvas.prepend(selected.element);
+  }
+  bringHandlesToFront();
+  capture();
+};
+
+// Also let's make that Center button work while we are here
+document.getElementById('centerBtn').onclick = () => {
+  if (!selected || !selected.element) return;
+  const bbox = selected.element.getBBox();
+  viewBox.x = bbox.x - (viewBox.w / 2) + (bbox.width / 2);
+  viewBox.y = bbox.y - (viewBox.h / 2) + (bbox.height / 2);
+  updateViewBox();
+};
+
 function projectPointToSegment(p, a, b) {
   const [px, py] = p;
   const [ax, ay] = a;
