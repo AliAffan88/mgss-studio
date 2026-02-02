@@ -964,11 +964,42 @@ async function performAutoWand(svgX, svgY) {
 
 // Simple Boundary Tracer (Sampled every 5th edge pixel for performance)
 function tracePathFromPixel(imgData, startX, startY) {
-  // Logic: Find similar colored neighboring pixels and return boundary
-  // Implementation of a simplified Moore-Neighbor tracing
+  const width = imgData.width;
+  const height = imgData.height;
+  const data = imgData.data;
+
+  // Helper to get pixel color
+  const getPixel = (x, y) => {
+    const i = (y * width + x) * 4;
+    return [data[i], data[i+1], data[i+2]];
+  };
+
+  const targetColor = getPixel(startX, startY);
   const points = [];
-  // ... (Tracing logic goes here)
-  return points; 
+  const visited = new Set();
+  const queue = [[startX, startY]];
+
+  // Simple flood-fill to find edge points
+  while(queue.length > 0 && points.length < 1000) {
+    const [x, y] = queue.shift();
+    const key = `${x},${y}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    const color = getPixel(x, y);
+    const isMatch = Math.abs(color[0]-targetColor[0]) < 30; // 30 is the sensitivity
+
+    if (isMatch) {
+      // If it's a boundary pixel, add to points
+      if (x % 5 === 0) points.push({x, y}); // Sample every 5th pixel for performance
+      
+      // Check neighbors
+      [[x+1,y],[x-1,y],[x,y+1],[x,y-1]].forEach(([nx, ny]) => {
+        if (nx >= 0 && nx < width && ny >= 0 && ny < height) queue.push([nx, ny]);
+      });
+    }
+  }
+  return points;
 }
 
 // --- CIRCLE SELECTION LOGIC ---
