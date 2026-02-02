@@ -32,7 +32,7 @@ const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; 
 const lockBgChk = document.getElementById('lockBgChk');
 
-// Wand setup
+// Wand initialization
 let wandCanvas = document.createElement('canvas');
 let wandCtx = wandCanvas.getContext('2d', { willReadFrequently: true });
 const wandBtn = document.getElementById('wandBtn');
@@ -75,7 +75,7 @@ let handles = [];
 let draggingHandle = null,
   dragOffset = [0, 0];
 
-// mode buttons
+// Mode buttons
 polyBtn.onclick = () => setMode('polygon');
 bezierBtn.onclick = () => setMode('bezier');
 selectBtn.onclick = () => setMode('select');
@@ -178,7 +178,7 @@ function loadBackgroundFromData(href, imgW, imgH) {
   bgImage = { href, width: imgW, height: imgH };
   viewBox = { x: 0, y: 0, w: imgW, h: imgH };
   
-  // Prepare Wand Sync
+  // Sync Wand scanner canvas
   wandCanvas.width = imgW;
   wandCanvas.height = imgH;
   const tempImg = new Image();
@@ -214,6 +214,7 @@ document.getElementById('resetZoomBtn').onclick = () => {
 
 // Mouse events
 canvas.addEventListener('mousedown', ev => {
+  // Wand click logic
   if (mode === 'wand') {
     const raw = clientToSvg(ev);
     autoTrace(Math.round(raw.x), Math.round(raw.y));
