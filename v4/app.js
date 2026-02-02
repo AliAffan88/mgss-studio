@@ -500,6 +500,7 @@ function createHandles(r){
 function handleDragging(ev){
   if(!draggingHandle||!selected) return;
   const pt = clientToSvg(ev);
+  const {x, y} = getSnappedPoint(raw.x, raw.y);
   const mx=pt.x, my=pt.y;
   const nx=mx-dragOffset[0], ny=my-dragOffset[1];
   draggingHandle.setAttribute('transform',`translate(${nx},${ny})`);
