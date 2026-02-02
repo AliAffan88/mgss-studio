@@ -805,20 +805,8 @@ document.getElementById('centerBtn').onclick = () => {
   updateViewBox();
 };
 // helpers
-function projectPointToSegment(p,a,b){
-  const [px,py]=p; const [ax,ay]=a; const [bx,by]=b;
-  const dx=bx-ax, dy=by-ay;
-  if(dx===0 && dy===0) return {x:ax,y:ay,dist:distance(px,py,ax,ay)};
-  let t=((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy);
-  t=Math.max(0,Math.min(1,t));
-  const cx=ax+t*dx, cy=ay+t*dy;
-  return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
-}
-function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
-
 // Threshold in SVG pixels. If mouse is within 10px of a vertex, it snaps.
 const SNAP_THRESHOLD = 10; 
-
 function getSnappedPoint(svgX, svgY) {
   let bestPoint = { x: svgX, y: svgY };
   let minDistance = SNAP_THRESHOLD;
@@ -839,6 +827,19 @@ function getSnappedPoint(svgX, svgY) {
 
   return bestPoint;
 }
+
+function projectPointToSegment(p,a,b){
+  const [px,py]=p; const [ax,ay]=a; const [bx,by]=b;
+  const dx=bx-ax, dy=by-ay;
+  if(dx===0 && dy===0) return {x:ax,y:ay,dist:distance(px,py,ax,ay)};
+  let t=((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy);
+  t=Math.max(0,Math.min(1,t));
+  const cx=ax+t*dx, cy=ay+t*dy;
+  return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
+}
+function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
+
 // Collapsible right panel logic
 document.querySelectorAll('.collapsible-header').forEach(header => {
   header.addEventListener('click', () => {
