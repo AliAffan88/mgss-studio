@@ -1,12 +1,6 @@
-// app.js - MGSS Studio v4 main
+// app.js - MGSS Studio v4/v5 main
 // Full-featured version with Synoptic-compatible export
 // Depends on undoRedo.js, projectIO.js, svgExport.js
-
-let wandCanvas = document.createElement('canvas');
-let wandCtx = wandCanvas.getContext('2d', { willReadFrequently: true });
-const wandBtn = document.getElementById('wandBtn');
-
-wandBtn.onclick = () => setMode('wand');
 
 const regionFieldInput = document.getElementById('regionField');
 const svgNS = "http://www.w3.org/2000/svg";
@@ -31,15 +25,13 @@ const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 const autosaveCheckbox = document.getElementById('autosave');
 const handBtn = document.getElementById('handBtn');
-const wandBtn = document.getElementById('wandBtn');
 const circleSelectBtn = document.getElementById('circleSelectBtn');
 const zoomInBtn = document.getElementById('zoomInBtn');
 const zoomOutBtn = document.getElementById('zoomOutBtn');
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 10;
-const ZOOM_STEP = 1.1; // 20% per click
+const ZOOM_STEP = 1.1; 
 const lockBgChk = document.getElementById('lockBgChk');
-
 
 // ===== THEME HANDLING =====
 function applyTheme(theme) {
@@ -47,13 +39,11 @@ function applyTheme(theme) {
   localStorage.setItem('mgss_theme', theme);
 }
 
-// init theme on load
 (function initTheme() {
   const savedTheme = localStorage.getItem('mgss_theme') || 'light';
   applyTheme(savedTheme);
 })();
 
-// toggle theme
 themeToggle.addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme');
   const next = current === 'dark' ? 'light' : 'dark';
@@ -62,11 +52,9 @@ themeToggle.addEventListener('click', () => {
 
 let isAltDown = false;
 let activeCurvePoint = null;
-
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
-
 let mode = 'polygon';
 let drawing = false;
 let current = null;
@@ -86,7 +74,6 @@ polyBtn.onclick = () => setMode('polygon');
 bezierBtn.onclick = () => setMode('bezier');
 selectBtn.onclick = () => setMode('select');
 handBtn.onclick = () => setMode('hand');
-wandBtn.onclick = () => setMode('wand');
 circleSelectBtn.onclick = () => setMode('circleSelect');
 
 function setMode(m) {
@@ -97,15 +84,10 @@ function setMode(m) {
   if (m === 'bezier') bezierBtn.classList.add('active');
   if (m === 'select') selectBtn.classList.add('active');
   if (m === 'hand') handBtn.classList.add('active');
-  if (m === 'wand') wandBtn.classList.add('active');
   if (m === 'circleSelect') circleSelectBtn.classList.add('active');
-  document.body.classList.toggle('mode-wand', m === 'wand');
-    if(m === 'wand') wandBtn.classList.add('active');
-   
   deselect();
 }
 
-// UndoRedo snapshot helpers
 function snapshotState() {
   const obj = { regions: [], bg: null, canvas: { w: canvas.clientWidth, h: canvas.clientHeight } };
   if (bgImage) obj.bg = { href: bgImage.href, width: bgImage.width, height: bgImage.height };
@@ -135,31 +117,21 @@ function restoreState(obj) {
     };
     createRegionElement(r);
     regions.set(id, r);
-    if (r.field) {
-      r.element.setAttribute('data-field', r.field);
-    }
+    if (r.field) r.element.setAttribute('data-field', r.field);
   });
   updateRegionList();
 }
 
-// initial capture
 UndoRedo.onChangeSet(() => {});
 function capture() { UndoRedo.capture(snapshotState()); }
 
 lockBgChk.addEventListener('change', () => {
   const bg = canvas.querySelector('#bgImage');
   if (!bg) return;
-
-  if (lockBgChk.checked) {
-    bg.style.pointerEvents = 'none';
-    canvas.classList.add('bg-locked');
-  } else {
-    bg.style.pointerEvents = 'auto';
-    canvas.classList.remove('bg-locked');
-  }
+  bg.style.pointerEvents = lockBgChk.checked ? 'none' : 'auto';
+  canvas.classList.toggle('bg-locked', lockBgChk.checked);
 });
 
-// Background image
 uploadImage.addEventListener('change', ev => {
   const file = ev.target.files[0];
   if (!file) return;
@@ -182,7 +154,6 @@ function loadBackgroundFromData(href, imgW, imgH) {
   canvas.setAttribute('viewBox', `0 0 ${imgW} ${imgH}`);
   canvas.setAttribute('width', imgW);
   canvas.setAttribute('height', imgH);
-  canvas.setAttribute('preserveAspectRatio', 'xMidYMid meet');
   const img = document.createElementNS(svgNS, 'image');
   img.setAttribute('id', 'bgImage');
   img.setAttribute('x', 0);
@@ -194,14 +165,11 @@ function loadBackgroundFromData(href, imgW, imgH) {
   canvas.insertBefore(img, canvas.firstChild);
   bgImage = { href, width: imgW, height: imgH };
   viewBox = { x: 0, y: 0, w: imgW, h: imgH };
-  wandCanvas.width = imgW;
-    wandCanvas.height = imgH;
-    const img = new Image();
-    img.onload = () => wandCtx.drawImage(img, 0, 0);
-    img.src = href;
 }
 
-function removeBackgroundImage() {
+document.getElementById('removeBgBtn').addEventListener('click', () => {
+  if (!bgImage) return;
+  if (!confirm('Remove background image?')) return;
   const old = canvas.querySelector('#bgImage');
   if (old) old.remove();
   bgImage = null;
@@ -209,51 +177,26 @@ function removeBackgroundImage() {
   canvas.setAttribute('width', 1000);
   canvas.setAttribute('height', 700);
   viewBox = { x: 0, y: 0, w: 1000, h: 700 };
-}
-
-document.getElementById('removeBgBtn').addEventListener('click', () => {
-  if (!bgImage) return;
-  if (!confirm('Remove background image?')) return;
-  removeBackgroundImage();
 });
 
-const fitBtn = document.getElementById('fitBtn');
-fitBtn.addEventListener('click', () => {
+document.getElementById('fitBtn').onclick = () => {
   if (!bgImage) return;
-  viewBox.x = 0;
-  viewBox.y = 0;
-  viewBox.w = bgImage.width;
-  viewBox.h = bgImage.height;
-  canvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
-  canvas.dataset.zoom = 1;
-});
-
-const resetZoomBtn = document.getElementById('resetZoomBtn');
-resetZoomBtn.addEventListener('click', () => {
-  canvas.dataset.zoom = 1;
-  if (bgImage) {
-    viewBox.x = 0;
-    viewBox.y = 0;
-    viewBox.w = bgImage.width;
-    viewBox.h = bgImage.height;
-  }
+  viewBox = { x: 0, y: 0, w: bgImage.width, h: bgImage.height };
   updateViewBox();
-});
+};
+
+document.getElementById('resetZoomBtn').onclick = () => {
+  if (bgImage) viewBox = { x: 0, y: 0, w: bgImage.width, h: bgImage.height };
+  else viewBox = { x: 0, y: 0, w: 1000, h: 700 };
+  updateViewBox();
+};
 
 // Mouse events
 canvas.addEventListener('mousedown', ev => {
   const { x: svgX, y: svgY } = clientToSvg(ev);
 
-  if (mode === 'wand') {
-    const raw = clientToSvg(ev);
-    const x = Math.round(raw.x);
-    const y = Math.round(raw.y);
-    autoTrace(x, y);
-    return;
-}
-
   if (mode === 'circleSelect') {
-    selectRegionsInCircle(svgX, svgY, 50); // 50 is the radius
+    selectRegionsInCircle(svgX, svgY, 50);
     return;
   }
   if (mode === 'hand') {
@@ -266,14 +209,12 @@ canvas.addEventListener('mousedown', ev => {
   if (ev.target.classList && ev.target.classList.contains('handle')) return;
   const raw = clientToSvg(ev); 
   const snapped = getSnappedPoint(raw.x, raw.y);
-  const svgX = snapped.x;
-  const svgY = snapped.y; // Apply Snap
   
   if (mode === 'polygon' || mode === 'bezier') {
     if (!drawing) {
-      startRegion(svgX, svgY);
-      addPoint(svgX, svgY, false);
-    } else addPoint(svgX, svgY, false);
+      startRegion(snapped.x, snapped.y);
+      addPoint(snapped.x, snapped.y, false);
+    } else addPoint(snapped.x, snapped.y, false);
   } else if (mode === 'select') {
     if (ev.target.tagName === 'polygon' || ev.target.tagName === 'path') {
       const id = ev.target.id;
@@ -295,19 +236,18 @@ canvas.addEventListener('mousemove', ev => {
 
   const { x, y } = clientToSvg(ev);
   if (drawing) {
-  const movePt = clientToSvg(ev);
-  const snappedMove = getSnappedPoint(movePt.x, movePt.y);
-  updateTempLine(snappedMove.x, snappedMove.y);
-  showTempCursor(snappedMove.x, snappedMove.y);
-}
+    const snappedMove = getSnappedPoint(x, y);
+    updateTempLine(snappedMove.x, snappedMove.y);
+    showTempCursor(snappedMove.x, snappedMove.y);
+  }
   if (selected && !drawing) {
     const near = findClosestEdge(selected, x, y);
     showEdgePreview(near);
   }
   if (draggingHandle && selected) {
     const idx = parseInt(draggingHandle.getAttribute('data-idx'), 10);
-    const nx = x - dragOffset[0],
-      ny = y - dragOffset[1];
+    const nx = x - dragOffset[0];
+    const ny = y - dragOffset[1];
     selected.points[idx].x = Math.round(nx);
     selected.points[idx].y = Math.round(ny);
     updateRegionElement(selected);
@@ -321,10 +261,6 @@ document.addEventListener('keydown', ev => {
   const isTyping = ev.target.matches('input, textarea, select, [contenteditable="true"]');
   if (isTyping) return;
   
-  if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA') {
-    return;
-  }
-
   if (ev.key === 'Escape' || ev.key === 'Backspace') {
     if (drawing) {
       if (current.points.length > 0) {
@@ -336,7 +272,6 @@ document.addEventListener('keydown', ev => {
       removeTempCursor();
       ev.preventDefault();
     } else {
-      if (ev.key === 'Backspace' && !drawing) return;
       deselect();
     }
   } else if (ev.key === 'Enter') {
@@ -349,102 +284,27 @@ document.addEventListener('keydown', ev => {
     if (s) restoreState(s);
   } else if (ev.key === 'Delete') {
     if (selected) deleteRegion(selected.id);
+  } else if (ev.key === 'Alt') {
+    isAltDown = true;
   }
 });
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Alt') isAltDown = true;
-});
-
-document.addEventListener('keyup', e => {
-  if (e.key === 'Alt') {
+document.addEventListener('keyup', ev => {
+  if (ev.key === 'Alt') {
     isAltDown = false;
     activeCurvePoint = null;
   }
 });
 
-function autoTrace(startX, startY) {
-  if (!bgImage) return alert("Upload a background image first!");
-
-  // Get image data from the hidden canvas
-  const pixelData = wandCtx.getImageData(0, 0, wandCanvas.width, wandCanvas.height).data;
-  const getPixel = (x, y) => {
-    const i = (y * wandCanvas.width + x) * 4;
-    return [pixelData[i], pixelData[i+1], pixelData[i+2]];
-  };
-
-  const targetColor = getPixel(startX, startY);
-  const threshold = 40; // Adjust for sensitivity
-  let points = [];
-  const rayCount = 40; // Number of points to sample around the click
-
-  // Simple radial boundary scan
-  for (let i = 0; i < rayCount; i++) {
-    const angle = (i / rayCount) * Math.PI * 2;
-    for (let dist = 1; dist < 800; dist += 3) {
-      const px = Math.round(startX + Math.cos(angle) * dist);
-      const py = Math.round(startY + Math.sin(angle) * dist);
-      
-      if (px < 0 || px >= wandCanvas.width || py < 0 || py >= wandCanvas.height) break;
-
-      const color = getPixel(px, py);
-      const diff = Math.abs(color[0] - targetColor[0]) + 
-                   Math.abs(color[1] - targetColor[1]) + 
-                   Math.abs(color[2] - targetColor[2]);
-
-      if (diff > threshold) {
-        points.push({x: px, y: py});
-        break;
-      }
-    }
-  }
-
-  if (points.length > 3) {
-    const id = generateId();
-    const newRegion = {
-      id,
-      points,
-      color: defaultColorInput.value,
-      opacity: parseFloat(defaultOpacityInput.value),
-      field: ''
-    };
-    createRegionElement(newRegion);
-    regions.set(id, newRegion);
-    attachRegionEvents(newRegion);
-    updateRegionList();
-    capture();
-  }
-}
-
-    if (points.length > 3) {
-        const id = generateId();
-        const newRegion = {
-            id,
-            points,
-            color: defaultColorInput.value,
-            opacity: parseFloat(defaultOpacityInput.value),
-            field: ''
-        };
-        createRegionElement(newRegion);
-        regions.set(id, newRegion);
-        attachRegionEvents(newRegion);
-        updateRegionList();
-        capture();
-    }
-}
-
-// helpers
-
+// Helpers
 const SNAP_THRESHOLD = 10;
 function getSnappedPoint(svgX, svgY) {
   let bestPoint = { x: svgX, y: svgY };
   const currentZoom = parseFloat(canvas.dataset.zoom || 1);
   const adjustedThreshold = SNAP_THRESHOLD / currentZoom;
-  let minDistance = SNAP_THRESHOLD;
+  let minDistance = adjustedThreshold;
 
-  // Look through every point in every region
   regions.forEach(region => {
-    // Don't snap to the region we are currently drawing
     if (drawing && current && region.id === current.id) return;
     if (selected && region.id === selected.id) return;
 
@@ -456,7 +316,6 @@ function getSnappedPoint(svgX, svgY) {
       }
     });
   });
-
   return bestPoint;
 }
 
@@ -593,12 +452,12 @@ function updateRegionElement(region) {
   region.element.setAttribute('stroke-width', '1.5');
 }
 
-// ID helpers
 function generateId() {
   let id;
   do { id = `Area_${regionCounter++}` } while (document.getElementById(id));
   return id;
 }
+
 function attachRegionEvents(region) {
   if (region.element) region.element.addEventListener('click', ev => {
     if (mode === 'select') {
@@ -608,7 +467,6 @@ function attachRegionEvents(region) {
   });
 }
 
-// region selection / handles
 function selectRegion(r) {
   const props = document.getElementById('regionPropsSection');
   if (props) props.classList.add('open');
@@ -633,7 +491,6 @@ function deselect() {
   fillOpacityInput.value = 0;
 }
 
-// handle creation
 function createHandles(r) {
   removeHandles();
   r.points.forEach((p, idx) => {
@@ -644,7 +501,7 @@ function createHandles(r) {
     const currentZoom = parseFloat(canvas.dataset.zoom || 1);
     const scaledRadius = 6 / currentZoom;
     const circ = document.createElementNS(svgNS, 'circle');
-    circ.setAttribute('r', 6);
+    circ.setAttribute('r', scaledRadius);
     circ.setAttribute('cx', 0);
     circ.setAttribute('cy', 0);
     g.appendChild(circ);
@@ -674,11 +531,8 @@ function createHandles(r) {
 function handleDragging(ev) {
   if (!draggingHandle || !selected) return;
   const pt = clientToSvg(ev);
-  const snappedHandle = getSnappedPoint(pt.x, pt.y);
-  const mx = pt.x,
-    my = pt.y;
-  const nx = mx - dragOffset[0],
-    ny = my - dragOffset[1];
+  const nx = pt.x - dragOffset[0];
+  const ny = pt.y - dragOffset[1];
   draggingHandle.setAttribute('transform', `translate(${nx},${ny})`);
   const idx = parseInt(draggingHandle.getAttribute('data-idx'), 10);
   selected.points[idx].x = Math.round(nx);
@@ -711,7 +565,6 @@ function removeVertex(r, index) {
   capture();
 }
 
-// edge previews & insertion
 function findClosestEdge(r, x, y) {
   const pts = r.points;
   let best = { dist: Infinity, idx: -1, x: 0, y: 0 };
@@ -783,9 +636,8 @@ function applyZoom(factor, centerX, centerY) {
   vb.width = newW;
   vb.height = newH;
   canvas.dataset.zoom = nextZoom;
-  const newRadius = 6 / nextZoom;
   document.querySelectorAll('.handle circle').forEach(c => {
-    c.setAttribute('r', newRadius);
+    c.setAttribute('r', 6 / nextZoom);
   });
   updateZoomButtons();
 }
@@ -833,32 +685,6 @@ canvas.addEventListener('wheel', ev => {
 document.addEventListener('keydown', ev => { if (ev.code === 'Space') canvas.style.cursor = 'grab'; });
 document.addEventListener('keyup', ev => { if (ev.code === 'Space') canvas.style.cursor = 'default'; });
 
-canvas.addEventListener('mousedown', ev => {
-  if (ev.code === 'Space' || ev.button === 1) {
-    isPanning = true;
-    panStart = { x: ev.clientX, y: ev.clientY };
-    canvas.style.cursor = 'grabbing';
-  }
-});
-
-canvas.addEventListener('mousemove', ev => {
-  if (drawing && mode === 'bezier' && isAltDown && activeCurvePoint) {
-    const pt = clientToSvg(ev);
-    activeCurvePoint.curve = true;
-    activeCurvePoint.cx = Math.round(pt.x);
-    activeCurvePoint.cy = Math.round(pt.y);
-    updateRegionElement(current);
-    return;
-  }
-  if (!isPanning) return;
-  const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
-  const dy = (ev.clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
-  viewBox.x -= dx;
-  viewBox.y -= dy;
-  panStart = { x: ev.clientX, y: ev.clientY };
-  updateViewBox();
-});
-
 document.addEventListener('mouseup', () => {
   isPanning = false;
   canvas.style.cursor = 'default';
@@ -878,12 +704,7 @@ regionFieldInput.addEventListener('input', () => {
 regionIDInput.addEventListener('input', () => {
   if (!selected) return;
   const newId = regionIDInput.value.trim();
-  if (!newId) return;
-  if (regions.has(newId) && newId !== selected.id) {
-    alert("Region ID already exists");
-    regionIDInput.value = selected.id;
-    return;
-  }
+  if (!newId || (regions.has(newId) && newId !== selected.id)) return;
   const oldId = selected.id;
   regions.delete(oldId);
   selected.id = newId;
@@ -915,7 +736,7 @@ exportPowerBI.addEventListener('click', () => {
   downloadSVG(svgStr, 'mgss_full.svg');
 });
 
-exportFull.addEventListener('click', () => { const svgStr = canvas.outerHTML; downloadSVG(svgStr, 'mgss_full_raw.svg'); });
+exportFull.addEventListener('click', () => { downloadSVG(canvas.outerHTML, 'mgss_full_raw.svg'); });
 
 function createPathD(r) {
   const pts = r.points;
@@ -943,14 +764,10 @@ loadProjectFile.addEventListener('change', ev => {
   const file = ev.target.files[0];
   if (!file) return;
   ProjectIO.importProjectFile(file, (err, obj) => {
-    if (err) { alert('Failed to load project'); return; }
+    if (err) return;
     restoreState(obj);
     capture();
   });
-});
-
-autosaveCheckbox.addEventListener('change', ev => {
-  if (ev.target.checked) { setInterval(() => { ProjectIO.exportProject(snapshotState()); }, 10000); }
 });
 
 undoBtn.addEventListener('click', () => { const s = UndoRedo.undo(); if (s) restoreState(s); });
@@ -961,9 +778,7 @@ const backBtn = document.getElementById('backBtn');
 
 frontBtn.onclick = () => {
   if (!selected || !selected.element) return;
-  // Moves the element to the bottom of the SVG list (renders on top)
   canvas.appendChild(selected.element);
-  // Ensure handles stay on top of the moved element
   bringHandlesToFront();
   capture(); 
 };
@@ -971,17 +786,12 @@ frontBtn.onclick = () => {
 backBtn.onclick = () => {
   if (!selected || !selected.element) return;
   const bg = canvas.querySelector('#bgImage');
-  if (bg) {
-    // Places it right after the background so it's behind other polygons
-    bg.after(selected.element);
-  } else {
-    canvas.prepend(selected.element);
-  }
+  if (bg) bg.after(selected.element);
+  else canvas.prepend(selected.element);
   bringHandlesToFront();
   capture();
 };
 
-// Also let's make that Center button work while we are here
 document.getElementById('centerBtn').onclick = () => {
   if (!selected || !selected.element) return;
   const bbox = selected.element.getBBox();
@@ -994,181 +804,20 @@ function projectPointToSegment(p, a, b) {
   const [px, py] = p;
   const [ax, ay] = a;
   const [bx, by] = b;
-  const dx = bx - ax,
-    dy = by - ay;
+  const dx = bx - ax, dy = by - ay;
   if (dx === 0 && dy === 0) return { x: ax, y: ay, dist: distance(px, py, ax, ay) };
   let t = ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy);
   t = Math.max(0, Math.min(1, t));
-  const cx = ax + t * dx,
-    cy = ay + t * dy;
-  return { x: cx, y: cy, dist: distance(px, py, cx, cy) };
+  return { x: ax + t * dx, y: ay + t * dy, dist: distance(px, py, ax + t * dx, ay + t * dy) };
 }
 
 function distance(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
 
-
-
 document.querySelectorAll('.collapsible-header').forEach(header => {
   header.addEventListener('click', () => {
-    const section = header.closest('.collapsible');
-    section.classList.toggle('open');
+    header.closest('.collapsible').classList.toggle('open');
   });
 });
-
-// --- AUTO WAND LOGIC ---
-async function performAutoWand(svgX, svgY) {
-  if (!bgImage) return;
-  
-  // Create offscreen canvas to read pixels
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  img.src = bgImage.href;
-  
-  await img.decode();
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = bgImage.width;
-  tempCanvas.height = bgImage.height;
-  const ctx = tempCanvas.getContext('2d');
-  ctx.drawImage(img, 0, 0);
-  
-  const imgData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-  const points = tracePathFromPixel(imgData, Math.round(svgX), Math.round(svgY));
-  
-  if (points.length > 3) {
-    const id = generateId();
-    const r = {
-      id,
-      points: points,
-      field: '',
-      color: defaultColorInput.value,
-      opacity: parseFloat(defaultOpacityInput.value)
-    };
-    createRegionElement(r);
-    regions.set(id, r);
-    attachRegionEvents(r);
-    updateRegionList();
-    capture();
-  }
-}
-
-
-function createMagicRegion(points) {
-    if (points.length < 10) return;
-
-    // 1. Find the center of the pixel mass
-    const center = points.reduce((acc, p) => ({
-        x: acc.x + p.x / points.length,
-        y: acc.y + p.y / points.length
-    }), { x: 0, y: 0 });
-
-    // 2. Sort points by angle around that center so they form a loop
-    const sortedPoints = points
-        .filter((_, i) => i % 5 === 0) // Optimization: take every 5th point for speed
-        .sort((a, b) => Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x));
-
-    const id = generateId();
-    const r = {
-        id,
-        points: sortedPoints,
-        field: '',
-        color: defaultColorInput.value,
-        opacity: parseFloat(defaultOpacityInput.value)
-    };
-
-    createRegionElement(r);
-    regions.set(id, r);
-    attachRegionEvents(r);
-    updateRegionList();
-    capture();
-}
-// Simple Boundary Tracer (Sampled every 5th edge pixel for performance)
-function runMagicWand(startX, startY) {
-    if (!bgImage) return;
-
-    // Sync offscreen canvas to current background
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = bgImage.href;
-    
-    img.onload = () => {
-        offscreenCanvas.width = bgImage.width;
-        offscreenCanvas.height = bgImage.height;
-        offscreenCtx.drawImage(img, 0, 0);
-
-        const threshold = parseInt(document.getElementById('wandThreshold')?.value || 30);
-        const width = offscreenCanvas.width;
-        const height = offscreenCanvas.height;
-        
-        if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
-
-        const imgData = offscreenCtx.getImageData(0, 0, width, height);
-        const pixels = imgData.data;
-        const visited = new Uint8Array(width * height);
-        const stack = [[startX, startY]];
-        
-        const startIdx = (startY * width + startX) * 4;
-        const [startR, startG, startB] = [pixels[startIdx], pixels[startIdx+1], pixels[startIdx+2]];
-        const regionPixels = [];
-
-        while (stack.length > 0) {
-            const [x, y] = stack.pop();
-            const idx = y * width + x;
-            if (visited[idx]) continue;
-            visited[idx] = 1;
-
-            const pIdx = idx * 4;
-            const diff = Math.sqrt(
-                Math.pow(pixels[pIdx] - startR, 2) + 
-                Math.pow(pixels[pIdx+1] - startG, 2) + 
-                Math.pow(pixels[pIdx+2] - startB, 2)
-            );
-
-            if (diff < threshold) {
-                // Only store pixels on the edge to keep it fast
-                let isEdge = x===0 || x===width-1 || y===0 || y===height-1;
-                if (!isEdge) {
-                    // Check if neighbors are outside threshold
-                    const nIdx = [(y*width+(x+1))*4, (y*width+(x-1))*4, ((y+1)*width+x)*4, ((y-1)*width+x)*4];
-                    isEdge = nIdx.some(i => Math.abs(pixels[i]-startR) > threshold);
-                }
-                
-                if (isEdge) regionPixels.push({x, y});
-
-                if (x > 0) stack.push([x - 1, y]);
-                if (x < width - 1) stack.push([x + 1, y]);
-                if (y > 0) stack.push([x, y - 1]);
-                if (y < height - 1) stack.push([x, y + 1]);
-            }
-        }
-
-        if (regionPixels.length > 10) {
-            const id = generateId();
-            // Sort points so the polygon doesn't "zig-zag"
-            const sortedPoints = sortPointsRadial(regionPixels);
-            const r = {
-                id,
-                points: sortedPoints,
-                color: defaultColorInput.value,
-                opacity: parseFloat(defaultOpacityInput.value),
-                field: ''
-            };
-            createRegionElement(r);
-            regions.set(id, r);
-            attachRegionEvents(r);
-            updateRegionList();
-            capture();
-        }
-    };
-}
-
-
-function sortPointsRadial(points) {
-    if (points.length === 0) return [];
-    const center = points.reduce((acc, p) => ({x: acc.x + p.x/points.length, y: acc.y + p.y/points.length}), {x:0, y:0});
-    return points
-        .filter((_, i) => i % 4 === 0) 
-        .sort((a, b) => Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x));
-}
 
 // --- CIRCLE SELECTION LOGIC ---
 function selectRegionsInCircle(centerX, centerY, radius) {
@@ -1178,7 +827,7 @@ function selectRegionsInCircle(centerX, centerY, radius) {
             return dist <= radius;
         });
         if (isInside) {
-            selectRegion(r); // Triggers the sidebar and UI highlight
+            selectRegion(r);
         }
     });
 }
