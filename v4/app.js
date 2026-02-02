@@ -76,7 +76,7 @@ let draggingHandle = null,
   dragOffset = [0, 0];
 
 // mode buttons
-polyBtn.onclick = () => setMode('polygon');
+polyBtn.onclick = () => setMode('poly');
 bezierBtn.onclick = () => setMode('bezier');
 selectBtn.onclick = () => setMode('select');
 handBtn.onclick = () => setMode('hand');
