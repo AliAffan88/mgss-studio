@@ -19,10 +19,16 @@ function buildCleanSVGFragment(items, width, height, imageData) {
 
   // Add all regions
   items.forEach(it => {
+
     if (it.tag === "polygon") {
       svg += `<polygon ` +
-             `id="${escapeXml(it.id)}" ` +
-             `points="${escapeXml(it.attr.points)}" ` +
+             `id="${escapeXml(it.id)}" `;
+
+      if (it.attr['data-field']) {
+        svg += `data-field="${escapeXml(it.attr['data-field'])}" `;
+      }
+
+      svg += `points="${escapeXml(it.attr.points)}" ` +
              `fill="${escapeXml(it.attr.fill)}" ` +
              `fill-opacity="${it.attr["fill-opacity"]}" ` +
              `stroke="${escapeXml(it.attr.stroke)}" ` +
@@ -31,13 +37,19 @@ function buildCleanSVGFragment(items, width, height, imageData) {
 
     if (it.tag === "path") {
       svg += `<path ` +
-             `id="${escapeXml(it.id)}" ` +
-             `d="${escapeXml(it.attr.d)}" ` +
+             `id="${escapeXml(it.id)}" `;
+
+      if (it.attr['data-field']) {
+        svg += `data-field="${escapeXml(it.attr['data-field'])}" `;
+      }
+
+      svg += `d="${escapeXml(it.attr.d)}" ` +
              `fill="${escapeXml(it.attr.fill)}" ` +
              `fill-opacity="${it.attr["fill-opacity"]}" ` +
              `stroke="${escapeXml(it.attr.stroke)}" ` +
              `stroke-width="${it.attr["stroke-width"]}" />`;
     }
+
   });
 
   svg += `</svg>`;
