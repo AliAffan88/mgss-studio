@@ -30,6 +30,7 @@ const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; // 20% per click
 const lockBgChk = document.getElementById('lockBgChk');
 
+
 // ===== THEME HANDLING =====
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -66,11 +67,13 @@ let tempLine = null, tempCursor = null, edgePreviewDot = null, bgImage = null;
 let handles = [];
 let draggingHandle = null, dragOffset = [0, 0];
 
+
 // mode buttons
 polyBtn.onclick = () => setMode('polygon');
 bezierBtn.onclick = () => setMode('bezier');
 selectBtn.onclick = () => setMode('select');
 handBtn.onclick = () => setMode('hand');
+
 
 function setMode(m) {
   mode = m;
@@ -102,26 +105,26 @@ function snapshotState() {
 function restoreState(obj) {
   clearAllRegions();
   if (obj.bg) loadBackgroundFromData(obj.bg.href, obj.bg.width, obj.bg.height, false);
-  if (obj.regions) {
-    obj.regions.forEach(rr => {
-      const id = rr.id;
-      const r = {
-        id,
-        points: rr.points.map(p => ({ x: p.x, y: p.y, curve: !!p.curve, cx: p.cx || null, cy: p.cy || null })),
-        color: rr.color || defaultColorInput.value,
-        opacity: rr.opacity != null ? rr.opacity : parseFloat(defaultOpacityInput.value),
-        field: rr.field || ''
-      };
-      createRegionElement(r);
-      if (r.field) r.element.setAttribute('data-field', r.field);
-      regions.set(id, r);
-    });
+  if (obj.regions) obj.regions.forEach(rr => {
+    const id = rr.id;
+    const r = {
+      id,
+      points: rr.points.map(p => ({ x: p.x, y: p.y, curve: !!p.curve, cx: p.cx || null, cy: p.cy || null })),
+      color: rr.color || defaultColorInput.value,
+      opacity: rr.opacity != null ? rr.opacity : parseFloat(defaultOpacityInput.value),
+      field: rr.field || ''
+    };
+    createRegionElement(r);
+    regions.set(id, r);
+  });
+  if (r.field) {
+    r.element.setAttribute('data-field', r.field);
   }
   updateRegionList();
 }
 
 // initial capture
-UndoRedo.onChangeSet(() => { });
+UndoRedo.onChangeSet(() => {});
 function capture() { UndoRedo.capture(snapshotState()); }
 
 lockBgChk.addEventListener('change', () => {
@@ -136,6 +139,7 @@ lockBgChk.addEventListener('change', () => {
     canvas.classList.remove('bg-locked');
   }
 });
+
 
 // Background image
 uploadImage.addEventListener('change', ev => {
@@ -175,10 +179,14 @@ function loadBackgroundFromData(href, imgW, imgH) {
 function removeBackgroundImage() {
   const old = canvas.querySelector('#bgImage');
   if (old) old.remove();
+
   bgImage = null;
+
+  // Reset viewBox to a safe default
   canvas.setAttribute('viewBox', '0 0 1000 700');
   canvas.setAttribute('width', 1000);
   canvas.setAttribute('height', 700);
+
   viewBox = { x: 0, y: 0, w: 1000, h: 700 };
 }
 
@@ -189,27 +197,38 @@ document.getElementById('removeBgBtn').addEventListener('click', () => {
 });
 
 const fitBtn = document.getElementById('fitBtn');
+
 fitBtn.addEventListener('click', () => {
   if (!bgImage) return;
+
   viewBox.x = 0;
   viewBox.y = 0;
   viewBox.w = bgImage.width;
   viewBox.h = bgImage.height;
-  canvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+
+  canvas.setAttribute(
+    'viewBox',
+    `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
+  );
+
   canvas.dataset.zoom = 1;
 });
 
 const resetZoomBtn = document.getElementById('resetZoomBtn');
+
 resetZoomBtn.addEventListener('click', () => {
   canvas.dataset.zoom = 1;
+
   if (bgImage) {
     viewBox.x = 0;
     viewBox.y = 0;
     viewBox.w = bgImage.width;
     viewBox.h = bgImage.height;
   }
+
   updateViewBox();
 });
+
 
 // Mouse events
 canvas.addEventListener('mousedown', ev => {
@@ -219,11 +238,14 @@ canvas.addEventListener('mousedown', ev => {
     canvas.style.cursor = 'grabbing';
     return;
   }
+
   if (ev.target.classList && ev.target.classList.contains('handle')) return;
-  const { x: svgX, y: svgY } = clientToSvg(ev);
+  const { x: svgX, y: svgY } = clientToSvg(ev); // use precise SVG coordinates
   if (mode === 'polygon' || mode === 'bezier') {
     if (!drawing) {
+      // start exactly at mouse cursor
       startRegion(svgX, svgY);
+      // push first point immediately
       addPoint(svgX, svgY, false);
     } else addPoint(svgX, svgY, false);
   } else if (mode === 'select') {
@@ -238,12 +260,15 @@ canvas.addEventListener('mousemove', ev => {
   if (isPanning) {
     const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
     const dy = (ev.clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
+
     viewBox.x -= dx;
     viewBox.y -= dy;
+
     panStart = { x: ev.clientX, y: ev.clientY };
     updateViewBox();
     return;
   }
+
   const { x, y } = clientToSvg(ev);
   if (drawing) { updateTempLine(x, y); showTempCursor(x, y); }
   if (selected && !drawing) {
@@ -264,11 +289,7 @@ canvas.addEventListener('dblclick', ev => { if (drawing) finalizeRegion(); });
 document.addEventListener('keydown', ev => {
   if (ev.key === 'Escape' || ev.key === 'Backspace') {
     if (drawing) {
-      if (current.points.length > 0) {
-        current.points.pop();
-        if (current.points.length === 0) cancelCurrent();
-        else updateRegionElement(current);
-      }
+      if (current.points.length > 0) { current.points.pop(); if (current.points.length === 0) cancelCurrent(); else updateRegionElement(current); }
       removeTempLine(); removeTempCursor(); ev.preventDefault();
     } else deselect();
   } else if (ev.key === 'Enter') { if (drawing) finalizeRegion(); }
@@ -277,8 +298,17 @@ document.addEventListener('keydown', ev => {
   else if (ev.key === 'Delete') { if (selected) deleteRegion(selected.id); }
 });
 
-document.addEventListener('keydown', e => { if (e.key === 'Alt') isAltDown = true; });
-document.addEventListener('keyup', e => { if (e.key === 'Alt') { isAltDown = false; activeCurvePoint = null; } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Alt') isAltDown = true;
+});
+
+document.addEventListener('keyup', e => {
+  if (e.key === 'Alt') {
+    isAltDown = false;
+    activeCurvePoint = null;
+  }
+});
+
 
 // helpers
 function clientToSvg(ev) {
@@ -286,7 +316,10 @@ function clientToSvg(ev) {
   pt.x = ev.clientX;
   pt.y = ev.clientY;
   const svgPt = pt.matrixTransform(canvas.getScreenCTM().inverse());
-  return { x: svgPt.x, y: svgPt.y };
+  return {
+    x: svgPt.x,
+    y: svgPt.y
+  };
 }
 
 function startRegion(x, y) {
@@ -299,14 +332,26 @@ function startRegion(x, y) {
 
 function addPoint(x, y) {
   if (!current) return;
-  const p = { x: Math.round(x), y: Math.round(y), curve: false, cx: null, cy: null };
+
+  const p = {
+    x: Math.round(x),
+    y: Math.round(y),
+    curve: false,
+    cx: null,
+    cy: null
+  };
+
   current.points.push(p);
   activeCurvePoint = p;
   updateRegionElement(current);
 }
 
+
 function updateViewBox() {
-  canvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+  canvas.setAttribute(
+    'viewBox',
+    `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
+  );
 }
 
 function updateTempLine(x, y) {
@@ -326,16 +371,7 @@ function updateTempLine(x, y) {
 }
 
 function removeTempLine() { if (tempLine && tempLine.parentNode) tempLine.parentNode.removeChild(tempLine); tempLine = null; }
-function showTempCursor(x, y) {
-  if (!tempCursor) {
-    tempCursor = document.createElementNS(svgNS, 'circle');
-    tempCursor.setAttribute('r', 4);
-    tempCursor.setAttribute('fill', '#007acc');
-    tempCursor.setAttribute('pointer-events', 'none');
-    canvas.appendChild(tempCursor);
-  }
-  tempCursor.setAttribute('cx', x); tempCursor.setAttribute('cy', y);
-}
+function showTempCursor(x, y) { if (!tempCursor) { tempCursor = document.createElementNS(svgNS, 'circle'); tempCursor.setAttribute('r', 4); tempCursor.setAttribute('fill', '#007acc'); tempCursor.setAttribute('pointer-events', 'none'); canvas.appendChild(tempCursor); } tempCursor.setAttribute('cx', x); tempCursor.setAttribute('cy', y); }
 function removeTempCursor() { if (tempCursor && tempCursor.parentNode) tempCursor.parentNode.removeChild(tempCursor); tempCursor = null; }
 
 function finalizeRegion() {
@@ -370,24 +406,12 @@ function updateRegionElement(region) {
   if (!region.element) createRegionElement(region);
   const anyCurve = pts.some(p => p.curve);
   if (anyCurve) {
-    if (region.element.tagName !== 'path') {
-      const newEl = document.createElementNS(svgNS, 'path');
-      if (region.element.parentNode) canvas.replaceChild(newEl, region.element);
-      region.element = newEl;
-    }
+    if (region.element.tagName !== 'path') { const newEl = document.createElementNS(svgNS, 'path'); if (region.element.parentNode) canvas.replaceChild(newEl, region.element); region.element = newEl; }
     let d = `M ${pts[0].x} ${pts[0].y}`;
-    for (let i = 1; i < pts.length; i++) {
-      const p = pts[i];
-      if (p.curve && p.cx != null && p.cy != null) d += ` Q ${p.cx} ${p.cy} ${p.x} ${p.y}`;
-      else d += ` L ${p.x} ${p.y}`;
-    }
+    for (let i = 1; i < pts.length; i++) { const p = pts[i]; if (p.curve && p.cx != null && p.cy != null) d += ` Q ${p.cx} ${p.cy} ${p.x} ${p.y}`; else d += ` L ${p.x} ${p.y}`; }
     d += ' Z'; region.element.setAttribute('d', d);
   } else {
-    if (region.element.tagName !== 'polygon') {
-      const newEl = document.createElementNS(svgNS, 'polygon');
-      if (region.element.parentNode) canvas.replaceChild(newEl, region.element);
-      region.element = newEl;
-    }
+    if (region.element.tagName !== 'polygon') { const newEl = document.createElementNS(svgNS, 'polygon'); if (region.element.parentNode) canvas.replaceChild(newEl, region.element); region.element = newEl; }
     const ptsAttr = pts.map(p => `${p.x},${p.y}`).join(' ');
     region.element.setAttribute('points', ptsAttr);
   }
@@ -396,9 +420,11 @@ function updateRegionElement(region) {
   region.element.setAttribute('stroke', 'black'); region.element.setAttribute('stroke-width', '1.5');
 }
 
+// ID helpers
 function generateId() { let id; do { id = `Area_${regionCounter++}` } while (document.getElementById(id)); return id; }
 function attachRegionEvents(region) { if (region.element) region.element.addEventListener('click', ev => { if (mode === 'select') { ev.stopPropagation(); selectRegion(region); } }); }
 
+// region selection / handles
 function selectRegion(r) {
   const props = document.getElementById('regionPropsSection');
   if (props) props.classList.add('open');
@@ -414,6 +440,7 @@ function selectRegion(r) {
 
 function deselect() { if (selected) { selected.element.classList.remove('selected'); removeHandles(); } selected = null; regionIDInput.value = ''; fillColorInput.value = '#000000'; fillOpacityInput.value = 0; }
 
+// handle creation
 function createHandles(r) {
   removeHandles();
   r.points.forEach((p, idx) => {
@@ -424,12 +451,22 @@ function createHandles(r) {
     g.addEventListener('mousedown', ev => {
       ev.stopPropagation();
       draggingHandle = g;
+
+      // current handle position (from transform)
       const tr = g.getAttribute('transform');
       const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(tr);
       const hx = m ? parseFloat(m[1]) : 0;
       const hy = m ? parseFloat(m[2]) : 0;
+
+      // mouse position in SVG coordinates
       const pt = clientToSvg(ev);
-      dragOffset = [pt.x - hx, pt.y - hy];
+
+      // correct SVG-based offset
+      dragOffset = [
+        pt.x - hx,
+        pt.y - hy
+      ];
+
       window.addEventListener('mousemove', handleDragging);
       window.addEventListener('mouseup', stopDraggingHandle);
     });
@@ -451,6 +488,7 @@ function handleDragging(ev) {
 }
 
 function stopDraggingHandle() { window.removeEventListener('mousemove', handleDragging); window.removeEventListener('mouseup', stopDraggingHandle); draggingHandle = null; updateRegionList(); capture(); }
+
 function removeHandles() { handles.forEach(h => { if (h.parentNode) h.parentNode.removeChild(h); }); handles = []; }
 function recreateHandles(r) { removeHandles(); createHandles(r); }
 function bringHandlesToFront() { handles.forEach(h => canvas.appendChild(h)); }
@@ -460,6 +498,7 @@ function removeVertex(r, index) {
   r.points.splice(index, 1); updateRegionElement(r); recreateHandles(r); updateRegionList(); capture();
 }
 
+// edge previews & insertion
 function findClosestEdge(r, x, y) {
   const pts = r.points;
   let best = { dist: Infinity, idx: -1, x: 0, y: 0 };
@@ -474,35 +513,11 @@ function findClosestEdge(r, x, y) {
 function showEdgePreview(info) {
   if (!info || info.dist === Infinity) return;
   if (info.dist > 28) { if (edgePreviewDot) { edgePreviewDot.remove(); edgePreviewDot = null; } return; }
-  if (!edgePreviewDot) {
-    edgePreviewDot = document.createElementNS(svgNS, 'circle');
-    edgePreviewDot.setAttribute('r', 5);
-    edgePreviewDot.setAttribute('fill', '#ff9900');
-    edgePreviewDot.setAttribute('pointer-events', 'none');
-    canvas.appendChild(edgePreviewDot);
-  }
+  if (!edgePreviewDot) { edgePreviewDot = document.createElementNS(svgNS, 'circle'); edgePreviewDot.setAttribute('r', 5); edgePreviewDot.setAttribute('fill', '#ff9900'); edgePreviewDot.setAttribute('pointer-events', 'none'); canvas.appendChild(edgePreviewDot); }
   edgePreviewDot.setAttribute('cx', info.x); edgePreviewDot.setAttribute('cy', info.y);
 }
 
 function insertVertexAt(r, x, y) {
   const info = findClosestEdge(r, x, y);
-  if (info.dist < 28) {
-    r.points.splice(info.idx, 0, { x: Math.round(info.x), y: Math.round(info.y), curve: false });
-    updateRegionElement(r); recreateHandles(r); updateRegionList(); capture();
-  }
+  if (info.dist < 28) { r.points.splice(info.idx, 0, { x: Math.round(info.x), y: Math.round(info.y), curve: false }); updateRegionElement(r); recreateHandles(r); updateRegionList(); capture(); }
 }
-
-// Additional required helper functions below
-function projectPointToSegment(p, a, b) {
-  const [px, py] = p; const [ax, ay] = a; const [bx, by] = b;
-  const dx = bx - ax, dy = by - ay;
-  if (dx === 0 && dy === 0) return { x: ax, y: ay, dist: distance(px, py, ax, ay) };
-  let t = ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy);
-  t = Math.max(0, Math.min(1, t));
-  const cx = ax + t * dx, cy = ay + t * dy;
-  return { x: cx, y: cy, dist: distance(px, py, cx, cy) };
-}
-function distance(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
-function clearAllRegions() { regions.forEach(r => { if (r.element && r.element.parentNode) r.element.parentNode.removeChild(r.element); }); regions.clear(); removeHandles(); selected = null; }
-function updateRegionList() { regionList.innerHTML = ''; regions.forEach(r => { const li = document.createElement('li'); li.textContent = r.id; li.onclick = () => selectRegion(r); regionList.appendChild(li); }); }
-function deleteRegion(id) { const r = regions.get(id); if (r) { if (r.element && r.element.parentNode) r.element.parentNode.removeChild(r.element); regions.delete(id); if (selected && selected.id === id) deselect(); updateRegionList(); capture(); } }
