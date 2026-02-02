@@ -142,10 +142,6 @@ body,
   cursor: grab;
 }
 
-.mode-wand #svgCanvas {
-    cursor: url('https://img.icons8.com/ios-filled/20/magic-wand.png'), auto;
-}
-
 /* Sidepanel */
 #sidepanel {
   width: 280px;
