@@ -240,6 +240,16 @@ canvas.addEventListener('mousedown', ev => {
   const snapped = getSnappedPoint(raw.x, raw.y);
   const svgX = snapped.x;
   const svgY = snapped.y; // Apply Snap
+  if (mode === 'wand') {
+    performAutoWand(svgX, svgY);
+    return;
+  }
+
+  if (mode === 'circleSelect') {
+    // 50 is the radius, you can change this value
+    selectRegionsInCircle(svgX, svgY, 50); 
+    return;
+  }
   if (mode === 'polygon' || mode === 'bezier') {
     if (!drawing) {
       startRegion(svgX, svgY);
@@ -972,6 +982,7 @@ function selectRegionsInCircle(centerX, centerY, radius = 50) {
     if (isInside) {
       // Logic to highlight/select multiple
       r.element.setAttribute('stroke-width', '3');
+      selectRegion(r);
     }
   });
 }
