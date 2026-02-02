@@ -1,217 +1,267 @@
-/* style.css - MGSS Studio v4 */
+:root{
+  --bg: #eef7ff;
+  --panel: #fafafa;
+  --accent: #007acc;
+  --text: #222;
+  --muted: #666;
 
-:root {
-  --bg: #eef7ff;
-  --panel: #fafafa;
-  --accent: #007acc;
-  --text: #222;
-  --muted: #666;
-  --border: #dcdcdc;
-  --btn-bg: #ffffff;
-  --btn-text: #222;
-  --canvas-bg: #f4f4f4;
-  --hover: #f0f0f0;
-  --danger: #d9534f;
+  --border: #dcdcdc;
+  --btn-bg: #ffffff;
+  --btn-text: #222;
+  --canvas-bg: #f4f4f4;
+  --hover: #f0f0f0;
 }
 
 [data-theme="dark"] {
-  --bg: #0f1720;
-  --panel: #0b1220;
-  --accent: #3aa0ff;
-  --text: #e6eef8;
-  --muted: #9aa6b2;
-  --border: #1f2a3a;
-  --btn-bg: #0f1720;
-  --btn-text: #e6eef8;
-  --canvas-bg: #081018;
-  --hover: #162030;
+  --bg: #0f1720;
+  --panel: #0b1220;
+  --accent: #3aa0ff;
+  --text: #e6eef8;
+  --muted: #9aa6b2;
+
+  --border: #1f2a3a;
+  --btn-bg: #0f1720;
+  --btn-text: #e6eef8;
+  --canvas-bg: #081018;
+  --hover: #162030;
 }
 
 * { box-sizing: border-box; }
 
 html, body, #app {
-  height: 100%;
-  margin: 0;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-  color: var(--text);
-  background: var(--bg);
+  height:100%;
+  margin:0;
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  color: var(--text);
 }
 
 #app {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
+  display:flex;
+  height:100vh;
+  overflow:hidden;
+  background: var(--bg);
 }
 
-/* Toolbar & Sidepanel Common */
-#toolbar, #sidepanel {
-  width: 280px;
-  background: var(--panel);
-  padding: 12px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+/* Toolbar */
+#toolbar {
+  width:300px;
+  background: var(--panel);
+  border-right:1px solid var(--border);
+  padding:12px;
+  overflow:auto;
 }
-
-#toolbar { border-right: 1px solid var(--border); }
-#sidepanel { border-left: 1px solid var(--border); }
 
 .brand {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  font-size: 1.1rem;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:8px;
 }
 
 .section {
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 12px;
+  margin-bottom:12px;
 }
-
-.section:last-child { border: none; }
 
 .section-title {
-  font-weight: 600;
-  margin-bottom: 8px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--muted);
+  font-weight:600;
+  margin-bottom:6px;
+  font-size:13px;
+  color:var(--muted);
 }
 
-/* Buttons */
-button, .actionBtn, .modeBtn {
-  width: 100%;
-  padding: 8px 10px;
-  margin: 4px 0;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  border-radius: 4px;
-  font-size: 13px;
-  transition: all 0.2s ease;
-}
-
-button:hover, .actionBtn:hover {
-  background: var(--hover);
+.tools button,
+.actionBtn,
+.modeBtn,
+#undoBtn,
+#redoBtn,
+#saveProjectBtn,
+#delBtn {
+  padding:8px 10px;
+  margin:4px 0;
+  cursor:pointer;
+  border:1px solid var(--border);
+  background: var(--btn-bg);
+  color: var(--btn-text);
 }
 
 .modeBtn.active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+  background: var(--accent);
+  color:#fff;
+  border:none;
 }
 
-.tools {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
+.file-label input {
+  display:block;
+  margin-top:6px;
 }
 
-/* Canvas Area */
+.small { font-size:13px; }
+
+.tips ul {
+  margin:6px 0 0 18px;
+  padding:0;
+  font-size:13px;
+  color:var(--muted);
+}
+
+/* Canvas */
 #main {
-  flex: 1;
-  display: flex;
-  background: var(--canvas-bg);
-  overflow: hidden;
-  position: relative;
+  flex:1;
+  display:flex;
+  align-items:stretch;
+  justify-content:stretch;
+  overflow:hidden;
+  padding:12px;
 }
 
 #canvasWrapper {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: auto;
+  flex:1;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow:auto;
+  background: var(--canvas-bg);
 }
 
 #svgCanvas {
-  background: white; /* Helpful to see bounds vs canvas bg */
-  box-shadow: 0 0 20px rgba(0,0,0,0.1);
-  cursor: crosshair;
+  max-width:100%;
+  max-height:100%;
+  width:auto;
+  height:auto;
+  display:block;
+  cursor:crosshair;
 }
 
-/* Special Cursors */
-.mode-hand #svgCanvas { cursor: grab; }
-.mode-hand #svgCanvas:active { cursor: grabbing; }
-.mode-wand #svgCanvas { 
-  cursor: crosshair; /* Fallback */
-  cursor: cell; 
+.mode-hand #svgCanvas {
+  cursor:grab;
 }
 
-/* Forms & Inputs */
-input[type="text"], input[id="regionID"], input[id="regionField"] {
-  width: 100%;
-  padding: 6px;
-  background: var(--btn-bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  margin-bottom: 8px;
-  border-radius: 4px;
+/* Sidepanel */
+#sidepanel {
+  width:280px;
+  min-width:280px;
+  max-width:280px;
+  background: var(--panel);
+  border-left:1px solid var(--border);
+  padding:12px;
+  overflow:auto;
 }
 
-label {
-  font-size: 12px;
-  font-weight: 500;
-  display: block;
-  margin-top: 8px;
+#sidepanel input[type="color"],
+#sidepanel input[type="range"] {
+  width:100%;
+  margin:6px 0;
 }
 
-/* Region List Items */
+#sidepanel button,
+#sidepanel label {
+  width:100%;
+  box-sizing:border-box;
+  color: var(--text);
+}
+
+#sidepanel label {
+  font-size:13px;
+}
+
+/* Region list */
 #regionList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  list-style:none;
+  padding:0;
+  margin:0;
+  max-height:48vh;
+  overflow:auto;
+  border-top:1px solid var(--border);
 }
 
 #regionList li {
-  padding: 8px;
-  font-size: 13px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-bottom: 2px;
+  padding:8px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
 }
 
-#regionList li:hover { background: var(--hover); }
-
-/* SVG Elements */
-polygon.selected, path.selected {
-  stroke: var(--accent) !important;
-  stroke-width: 3 !important;
-  stroke-dasharray: 4;
+#regionList li:hover {
+  background: var(--hover);
 }
 
+/* selected highlight */
+polygon.selected,
+path.selected {
+  stroke:var(--accent) !important;
+  stroke-width:2.6 !important;
+  fill-opacity:0.35 !important;
+}
+
+/* handles */
+.handle { cursor:move; pointer-events:all; }
 .handle circle {
-  fill: white;
-  stroke: var(--accent);
-  stroke-width: 2;
+  r:6;
+  stroke: var(--text);
+  stroke-width:1;
+  fill: var(--btn-bg);
 }
 
-/* Collapsible logic */
+/* responsive */
+@media (max-width:1000px){
+  #toolbar,
+  #sidepanel {
+    display:none;
+  }
+}
+/* Collapsible panels */
 .collapsible-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  padding: 4px 0;
-}
-
-.collapsible:not(.open) .collapsible-body {
-  display: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
 }
 
 .collapsible .chevron {
-  transition: transform 0.2s;
+  transition: transform 0.2s ease;
+  font-size: 12px;
 }
 
 .collapsible:not(.open) .chevron {
-  transform: rotate(-90deg);
+  transform: rotate(-90deg);
 }
 
-/* Responsive Hide */
-@media (max-width: 1100px) {
-  #toolbar, #sidepanel { width: 220px; }
+.collapsible-body {
+  margin-top: 8px;
 }
+
+.collapsible:not(.open) .collapsible-body {
+  display: none;
+}
+
+style.css is above and projectIO.js is as below;
+
+// Save / Load project (.mgss.json)
+const ProjectIO = (function(){
+  function exportProject(state) {
+    // state is a plain object representing the app (regions, background, canvas size)
+    const json = JSON.stringify(state, null, 2);
+    const blob = new Blob([json], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'mgss_project.mgss.json';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  function importProjectFile(file, cb) {
+    const reader = new FileReader();
+    reader.onload = function(e){ 
+      try {
+        const obj = JSON.parse(e.target.result);
+        cb(null, obj);
+      } catch(err){ cb(err); }
+    };
+    reader.onerror = function(){ cb(new Error('Failed to read file')); };
+    reader.readAsText(file);
+  }
+
+  return { exportProject, importProjectFile };
+})();
