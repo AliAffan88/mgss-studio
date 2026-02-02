@@ -230,7 +230,9 @@ canvas.addEventListener('mousedown', ev => {
 
   if (ev.target.classList && ev.target.classList.contains('handle')) return;
   const raw = clientToSvg(ev); 
-  const {x: svgX, y: svgY} = getSnappedPoint(raw.x, raw.y); // Apply Snap
+  const snapped = getSnappedPoint(raw.x, raw.y);
+  const svgX = snapped.x;
+  const svgY = snapped.y; // Apply Snap
   if (mode === 'polygon' || mode === 'bezier') {
     if (!drawing) {
       startRegion(svgX, svgY);
@@ -257,12 +259,11 @@ canvas.addEventListener('mousemove', ev => {
 
   const { x, y } = clientToSvg(ev);
   if (drawing) {
-    const raw = clientToSvg(ev);
-    const {x, y} = getSnappedPoint(raw.x, raw.y); // Apply Snap
-    if(drawing){ updateTempLine(x,y); showTempCursor(x,y); }
-    updateTempLine(x, y);
-    showTempCursor(x, y);
-  }
+  const movePt = clientToSvg(ev);
+  const snappedMove = getSnappedPoint(movePt.x, movePt.y);
+  updateTempLine(snappedMove.x, snappedMove.y);
+  showTempCursor(snappedMove.x, snappedMove.y);
+}
   if (selected && !drawing) {
     const near = findClosestEdge(selected, x, y);
     showEdgePreview(near);
@@ -332,7 +333,7 @@ const SNAP_THRESHOLD = 10;
 function getSnappedPoint(svgX, svgY) {
   let bestPoint = { x: svgX, y: svgY };
   const currentZoom = parseFloat(canvas.dataset.zoom || 1);
-  const adjustedThreshold = BASE_SNAP_THRESHOLD / currentZoom;
+  const adjustedThreshold = SNAP_THRESHOLD / currentZoom;
   let minDistance = SNAP_THRESHOLD;
 
   // Look through every point in every region
@@ -567,7 +568,7 @@ function createHandles(r) {
 function handleDragging(ev) {
   if (!draggingHandle || !selected) return;
   const pt = clientToSvg(ev);
-  const {x, y} = getSnappedPoint(raw.x, raw.y);
+  const snappedHandle = getSnappedPoint(pt.x, pt.y);
   const mx = pt.x,
     my = pt.y;
   const nx = mx - dragOffset[0],
