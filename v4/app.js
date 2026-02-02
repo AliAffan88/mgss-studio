@@ -301,7 +301,11 @@ canvas.addEventListener('mousemove', ev=>{
   if(draggingHandle && selected){
     const idx = parseInt(draggingHandle.getAttribute('data-idx'),10);
     const nx = x - dragOffset[0], ny = y - dragOffset[1];
-    selected.points[idx].x = Math.round(nx); selected.points[idx].y = Math.round(ny);
+    selected.points[parseInt(draggingHandle.getAttribute('data-idx'), 10)] = {
+        ...selected.points[parseInt(draggingHandle.getAttribute('data-idx'), 10)],
+        x: Math.round(nx), 
+        y: Math.round(ny)
+    };
     updateRegionElement(selected);
     recreateHandles(selected);
   }
@@ -519,14 +523,16 @@ function createHandles(r){
 
 function handleDragging(ev){
   if(!draggingHandle||!selected) return;
-  const pt = clientToSvg(ev);
-  const {x, y} = getSnappedPoint(raw.x, raw.y);
-  const mx=pt.x, my=pt.y;
-  const nx=mx-dragOffset[0], ny=my-dragOffset[1];
+  const raw = clientToSvg(ev); // Define raw here
+  const {x, y} = getSnappedPoint(raw.x, raw.y); // Apply snap to the mouse
+  
+  const nx = x - dragOffset[0], ny = y - dragOffset[1];
   draggingHandle.setAttribute('transform',`translate(${nx},${ny})`);
-  const idx=parseInt(draggingHandle.getAttribute('data-idx'),10);
-  selected.points[idx].x=Math.round(nx); selected.points[idx].y=Math.round(ny);
-  updateRegionElement(selected); recreateHandles(selected);
+  const idx = parseInt(draggingHandle.getAttribute('data-idx'),10);
+  selected.points[idx].x = Math.round(nx); 
+  selected.points[idx].y = Math.round(ny);
+  updateRegionElement(selected); 
+  recreateHandles(selected);
 }
 
 function stopDraggingHandle(){ window.removeEventListener('mousemove',handleDragging); window.removeEventListener('mouseup',stopDraggingHandle); draggingHandle=null; updateRegionList(); capture(); }
@@ -828,14 +834,18 @@ document.getElementById('centerBtn').onclick = () => {
 // helpers
 // Threshold in SVG pixels. If mouse is within 10px of a vertex, it snaps.
 const SNAP_THRESHOLD = 10; 
+const BASE_SNAP_THRESHOLD = 10;
 function getSnappedPoint(svgX, svgY) {
   let bestPoint = { x: svgX, y: svgY };
+  const currentZoom = parseFloat(canvas.dataset.zoom || 1);
+  const adjustedThreshold = BASE_SNAP_THRESHOLD / currentZoom;
   let minDistance = SNAP_THRESHOLD;
 
   // Look through every point in every region
   regions.forEach(region => {
     // Don't snap to the region we are currently drawing
     if (drawing && current && region.id === current.id) return;
+    if (selected && region.id === selected.id) return; // Don't snap to self when dragging handles
 
     region.points.forEach(p => {
       const d = distance(svgX, svgY, p.x, p.y);
@@ -870,6 +880,59 @@ document.querySelectorAll('.collapsible-header').forEach(header => {
     section.classList.toggle('open');
   });
 });
+
+function autoTrace(startX, startY) {
+  if (!bgImage) return alert("Upload a background image first!");
+
+  // Get image data from the hidden canvas
+  const pixelData = wandCtx.getImageData(0, 0, wandCanvas.width, wandCanvas.height).data;
+  const getPixel = (x, y) => {
+    const i = (y * wandCanvas.width + x) * 4;
+    return [pixelData[i], pixelData[i+1], pixelData[i+2]];
+  };
+
+  const targetColor = getPixel(startX, startY);
+  const threshold = 40; // Adjust for sensitivity
+  let points = [];
+  const rayCount = 40; // Number of points to sample around the click
+
+  // Simple radial boundary scan
+  for (let i = 0; i < rayCount; i++) {
+    const angle = (i / rayCount) * Math.PI * 2;
+    for (let dist = 1; dist < 800; dist += 3) {
+      const px = Math.round(startX + Math.cos(angle) * dist);
+      const py = Math.round(startY + Math.sin(angle) * dist);
+      
+      if (px < 0 || px >= wandCanvas.width || py < 0 || py >= wandCanvas.height) break;
+
+      const color = getPixel(px, py);
+      const diff = Math.abs(color[0] - targetColor[0]) + 
+                   Math.abs(color[1] - targetColor[1]) + 
+                   Math.abs(color[2] - targetColor[2]);
+
+      if (diff > threshold) {
+        points.push({x: px, y: py});
+        break;
+      }
+    }
+  }
+
+  if (points.length > 3) {
+    const id = generateId();
+    const newRegion = {
+      id,
+      points,
+      color: defaultColorInput.value,
+      opacity: parseFloat(defaultOpacityInput.value),
+      field: ''
+    };
+    createRegionElement(newRegion);
+    regions.set(id, newRegion);
+    attachRegionEvents(newRegion);
+    updateRegionList();
+    capture();
+  }
+}
 
 
 
