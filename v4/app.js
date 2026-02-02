@@ -68,6 +68,11 @@ let selected = null;
 let tempLine = null, tempCursor = null, edgePreviewDot = null, bgImage = null;
 let handles = [];
 let draggingHandle = null, dragOffset = [0,0];
+let wandCanvas = document.createElement('canvas');
+let wandCtx = wandCanvas.getContext('2d', { willReadFrequently: true });
+const wandBtn = document.getElementById('wandBtn');
+
+wandBtn.onclick = () => setMode('wand');
 
 
 // mode buttons
@@ -86,6 +91,8 @@ function setMode(m){
   if(m==='select') selectBtn.classList.add('active');
   if(m === 'hand') handBtn.classList.add('active');
   deselect();
+  document.body.classList.toggle('mode-wand', m === 'wand');
+    if(m === 'wand') wandBtn.classList.add('active');
 }
 
 // UndoRedo snapshot helpers
@@ -175,6 +182,11 @@ function loadBackgroundFromData(href,imgW,imgH){
   canvas.insertBefore(img,canvas.firstChild);
   bgImage = { href, width:imgW, height:imgH };
   viewBox = { x: 0, y: 0, w: imgW, h: imgH };
+  wandCanvas.width = imgW;
+    wandCanvas.height = imgH;
+    const img = new Image();
+    img.onload = () => wandCtx.drawImage(img, 0, 0);
+    img.src = href;
 }
 
 function removeBackgroundImage() {
@@ -233,6 +245,14 @@ resetZoomBtn.addEventListener('click', () => {
 
 // Mouse events
 canvas.addEventListener('mousedown', ev=>{
+  // Inside mousedown listener
+if (mode === 'wand') {
+    const raw = clientToSvg(ev);
+    const x = Math.round(raw.x);
+    const y = Math.round(raw.y);
+    autoTrace(x, y);
+    return;
+}
   if (mode === 'hand') {
   isPanning = true;
   panStart = { x: ev.clientX, y: ev.clientY };
@@ -828,6 +848,8 @@ function getSnappedPoint(svgX, svgY) {
 
   return bestPoint;
 }
+
+
 
 function projectPointToSegment(p,a,b){
   const [px,py]=p; const [ax,ay]=a; const [bx,by]=b;
