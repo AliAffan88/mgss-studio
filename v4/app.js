@@ -504,6 +504,8 @@ function createHandles(r) {
     g.classList.add('handle');
     g.setAttribute('data-idx', idx);
     g.setAttribute('transform', `translate(${p.x},${p.y})`);
+    const currentZoom = parseFloat(canvas.dataset.zoom || 1);
+    const scaledRadius = 6 / currentZoom;
     const circ = document.createElementNS(svgNS, 'circle');
     circ.setAttribute('r', 6);
     circ.setAttribute('cx', 0);
@@ -643,6 +645,10 @@ function applyZoom(factor, centerX, centerY) {
   vb.width = newW;
   vb.height = newH;
   canvas.dataset.zoom = nextZoom;
+  const newRadius = 6 / nextZoom;
+  document.querySelectorAll('.handle circle').forEach(c => {
+    c.setAttribute('r', newRadius);
+  });
   updateZoomButtons();
 }
 
