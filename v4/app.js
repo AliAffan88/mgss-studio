@@ -61,7 +61,6 @@ let activeCurvePoint = null;
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
-let wandModeActive = false;
 let mode = 'polygon';
 let drawing = false;
 let current = null;
@@ -92,7 +91,7 @@ function setMode(m) {
     if (b) b.classList.remove('active');
   });
 
-  if (m === 'poly') polyBtn.classList.add('active');
+  if (m === 'polygon') polyBtn.classList.add('active');
   if (m === 'bezier') bezierBtn.classList.add('active');
   if (m === 'select') selectBtn.classList.add('active');
   if (m === 'hand') handBtn.classList.add('active');
@@ -100,7 +99,7 @@ function setMode(m) {
 
   if (typeof deselectAll === 'function') deselectAll();
   }
-}
+
 
 // UndoRedo snapshot helpers
 function snapshotState() {
