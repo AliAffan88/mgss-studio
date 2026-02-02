@@ -200,12 +200,15 @@ function removeBackgroundImage() {
   canvas.setAttribute('height', 700);
 
   viewBox = { x: 0, y: 0, w: 1000, h: 700 };
+  uploadImage.value = "";
 }
 
 document.getElementById('removeBgBtn').addEventListener('click', () => {
   if (!bgImage) return;
   if (!confirm('Remove background image?')) return;
   removeBackgroundImage();
+
+  if (wandCtx) wandCtx.clearRect(0, 0, wandCanvas.width, wandCanvas.height);
 });
 
 const fitBtn = document.getElementById('fitBtn');
