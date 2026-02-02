@@ -29,10 +29,8 @@ const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; // 20% per click
 const lockBgChk = document.getElementById('lockBgChk');
+const wandBtn = document.getElementById('wandBtn');
 
-
-// ===== THEME HANDLING =====
-//const themeToggle = document.getElementById('themeToggle');
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -54,11 +52,9 @@ themeToggle.addEventListener('click', () => {
 
 let isAltDown = false;
 let activeCurvePoint = null;
-
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
-
 let mode = 'polygon';
 let drawing = false;
 let current = null;
@@ -68,19 +64,16 @@ let selected = null;
 let tempLine = null, tempCursor = null, edgePreviewDot = null, bgImage = null;
 let handles = [];
 let draggingHandle = null, dragOffset = [0,0];
-
 // Magic Wand State (Injected)
-const wandBtn = document.getElementById('wandBtn');
 let wandCanvas = document.createElement('canvas');
 let wandCtx = wandCanvas.getContext('2d', { willReadFrequently: true });
-wandBtn.onclick = () => setMode('wand');
-
 
 // mode buttons
 polyBtn.onclick = ()=> setMode('polygon');
 bezierBtn.onclick = ()=> setMode('bezier');
 selectBtn.onclick = ()=> setMode('select');
 handBtn.onclick = () => setMode('hand');
+wandBtn.onclick = () => setMode('wand');
 
 
 function setMode(m){
@@ -114,21 +107,21 @@ function snapshotState(){
 function restoreState(obj){
   clearAllRegions();
   if(obj.bg) loadBackgroundFromData(obj.bg.href, obj.bg.width, obj.bg.height, false);
-  if(obj.regions) obj.regions.forEach(rr=>{
-    const id = rr.id;
-    const r = { 
-      id, 
-      points: rr.points.map(p=>({x:p.x,y:p.y,curve:!!p.curve,cx:p.cx||null,cy:p.cy||null})), 
-      color: rr.color||defaultColorInput.value, 
-      opacity: rr.opacity!=null?rr.opacity:parseFloat(defaultOpacityInput.value),
-      field: rr.field || ''
-    };
-    createRegionElement(r);
-    regions.set(id,r);
-  });
-  if (r.field) {
-  r.element.setAttribute('data-field', r.field);
-}
+  if(obj.regions) {
+    obj.regions.forEach(rr => {
+      const r = { 
+        id: rr.id, 
+        points: rr.points.map(p=>({x:p.x,y:p.y,curve:!!p.curve,cx:p.cx||null,cy:p.cy||null})), 
+        color: rr.color || defaultColorInput.value, 
+        opacity: rr.opacity != null ? rr.opacity : parseFloat(defaultOpacityInput.value),
+        field: rr.field || ''
+      };
+      createRegionElement(r);
+      if (r.field) r.element.setAttribute('data-field', r.field);
+      regions.set(r.id, r);
+      attachRegionEvents(r);
+    });
+  }
   updateRegionList();
 }
 
@@ -276,30 +269,35 @@ canvas.addEventListener('mousedown', ev=>{
   }
 });
 
-canvas.addEventListener('mousemove', ev=>{
+canvas.addEventListener('mousemove', ev => {
   if (isPanning) {
-  const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
-  const dy = (ev.clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
-
-  viewBox.x -= dx;
-  viewBox.y -= dy;
-
-  panStart = { x: ev.clientX, y: ev.clientY };
-  updateViewBox();
-  return;
-}
+    const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
+    const dy = (ev.clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
+    viewBox.x -= dx;
+    viewBox.y -= dy;
+    panStart = { x: ev.clientX, y: ev.clientY };
+    updateViewBox();
+    return;
+  }
 
   const raw = clientToSvg(ev);
-  const {x, y} = getSnappedPoint(raw.x, raw.y); // Apply Snap
-  if(drawing){ updateTempLine(x,y); showTempCursor(x,y); }
+  const {x, y} = getSnappedPoint(raw.x, raw.y); 
+  
+  if(drawing){ 
+    updateTempLine(x,y); 
+    showTempCursor(x,y); 
+  }
+  
   if(selected && !drawing){
     const near = findClosestEdge(selected,x,y);
     showEdgePreview(near);
   }
+  
   if(draggingHandle && selected){
     const idx = parseInt(draggingHandle.getAttribute('data-idx'),10);
     const nx = x - dragOffset[0], ny = y - dragOffset[1];
-    selected.points[idx].x = Math.round(nx); selected.points[idx].y = Math.round(ny);
+    selected.points[idx].x = Math.round(nx); 
+    selected.points[idx].y = Math.round(ny);
     updateRegionElement(selected);
     recreateHandles(selected);
   }
