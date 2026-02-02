@@ -76,7 +76,7 @@ let draggingHandle = null,
   dragOffset = [0, 0];
 
 // mode buttons
-polyBtn.onclick = () => setMode('poly');
+polyBtn.onclick = () => setMode('polygon');
 bezierBtn.onclick = () => setMode('bezier');
 selectBtn.onclick = () => setMode('select');
 handBtn.onclick = () => setMode('hand');
@@ -165,8 +165,8 @@ uploadImage.addEventListener('change', ev => {
     const img = new Image();
     img.onload = () => {
       loadBackgroundFromData(href, img.naturalWidth, img.naturalHeight);
-      offscreenCanvas.width = img.naturalwidth;
-      offscreenCanvas.height = img.naturalheight;
+      offscreenCanvas.width = img.naturalWidth;
+      offscreenCanvas.height = img.naturalHeight;
       offscreenCtx.drawImage(img, 0, 0);
       capture();
     };
