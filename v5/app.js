@@ -1079,23 +1079,24 @@ function runMagicWand(startX, startY) {
     };
 }
 
+
 function sortPointsRadial(points) {
+    if (points.length === 0) return [];
     const center = points.reduce((acc, p) => ({x: acc.x + p.x/points.length, y: acc.y + p.y/points.length}), {x:0, y:0});
     return points
-        .filter((_, i) => i % 4 === 0) // Optimization: use every 4th point
+        .filter((_, i) => i % 4 === 0) 
         .sort((a, b) => Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x));
 }
 
 // --- CIRCLE SELECTION LOGIC ---
-function selectRegionsInCircle(centerX, centerY, radius = 50) {
-  regions.forEach(r => {
-    const isInside = r.points.some(p => {
-      const dist = Math.sqrt((p.x - centerX)**2 + (p.y - centerY)**2);
-      return dist <= radius;
+function selectRegionsInCircle(centerX, centerY, radius) {
+    regions.forEach(r => {
+        const isInside = r.points.some(p => {
+            const dist = Math.sqrt((p.x - centerX)**2 + (p.y - centerY)**2);
+            return dist <= radius;
+        });
+        if (isInside) {
+            selectRegion(r); // Triggers the sidebar and UI highlight
+        }
     });
-    
-    if (isInside) {
-      selectRegion(r); // This triggers the side panel and UI highlight
-    }
-  });
 }
