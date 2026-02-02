@@ -661,17 +661,21 @@ regionIDInput.addEventListener('input', () => {
 });
 
 exportPowerBI.onclick = () => {
+  const isHeatmap = document.getElementById('heatmapExportChk').checked;
   const svgStr = buildCleanSVGFragment([...regions.values()].map(r => ({
     tag: r.points.some(p => p.curve) ? 'path' : 'polygon',
     id: r.id,
     attr: {
       points: r.points.map(p => `${p.x},${p.y}`).join(' '),
       d: r.points.some(p => p.curve) ? createPathD(r) : '',
-      fill: r.color, 'fill-opacity': r.opacity, 'data-field': r.field || '',
-      stroke: 'black', 'stroke-width': '1.5'
+      fill: isHeatmap ? 'transparent' : r.color, 
+      'fill-opacity': isHeatmap ? 1 : r.opacity,
+      'data-field': r.field || '',
+      stroke: 'black', 
+      'stroke-width': '1.5'
     }
   })), canvas.viewBox.baseVal.width, canvas.viewBox.baseVal.height, bgImage);
-  downloadSVG(svgStr, 'mgss_full.svg');
+  downloadSVG(svgStr, isHeatmap ? 'map_heatmap_ready.svg' : 'map_colored.svg');
 };
 
 exportFull.onclick = () => downloadSVG(canvas.outerHTML, 'mgss_full_raw.svg');
