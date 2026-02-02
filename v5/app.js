@@ -975,38 +975,65 @@ async function performAutoWand(svgX, svgY) {
 
 // Simple Boundary Tracer (Sampled every 5th edge pixel for performance)
 function tracePathFromPixel(imgData, startX, startY) {
-  const width = imgData.width;
-  const height = imgData.height;
-  const data = imgData.data;
-  const points = [];
+    const width = imgData.width;
+    const height = imgData.height;
+    const data = imgData.data;
+    const points = [];
+    const visited = new Uint8Array(width * height);
 
-  const getPixel = (x, y) => {
-    const i = (y * width + x) * 4;
-    return [data[i], data[i+1], data[i+2]];
-  };
+    const getPixel = (x, y) => {
+        const i = (y * width + x) * 4;
+        return [data[i], data[i+1], data[i+2]];
+    };
 
-  const targetColor = getPixel(startX, startY);
-  const visited = new Set();
-  const queue = [[startX, startY]];
+    const targetColor = getPixel(startX, startY);
+    const threshold = parseInt(document.getElementById('wandThreshold')?.value || 30);
+    const queue = [[startX, startY]];
 
-  while(queue.length > 0 && points.length < 500) {
-    const [x, y] = queue.shift();
-    const key = `${x},${y}`;
-    if (visited.has(key)) continue;
-    visited.add(key);
+    while (queue.length > 0 && points.length < 2000) {
+        const [x, y] = queue.shift();
+        const idx = y * width + x;
+        if (visited[idx]) continue;
+        visited[idx] = 1;
 
-    const color = getPixel(x, y);
-    // Tolerance check (30)
-    const isMatch = Math.abs(color[0]-targetColor[0]) < 30;
+        const color = getPixel(x, y);
+        const isMatch = Math.abs(color[0] - targetColor[0]) < threshold &&
+                        Math.abs(color[1] - targetColor[1]) < threshold &&
+                        Math.abs(color[2] - targetColor[2]) < threshold;
 
-    if (isMatch) {
-      if (x % 4 === 0) points.push({x, y}); // Sample every 4th pixel for speed
-      [[x+1,y],[x-1,y],[x,y+1],[x,y-1]].forEach(([nx, ny]) => {
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height) queue.push([nx, ny]);
-      });
+        if (isMatch) {
+            // --- EDGE DETECTION LOGIC ---
+            // Only add point if one of its neighbors is NOT a match (it's a border)
+            let isEdge = false;
+            const neighbors = [[x+1,y],[x-1,y],[x,y+1],[x,y-1]];
+            
+            for (const [nx, ny] of neighbors) {
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
+                    isEdge = true; break;
+                }
+                const nColor = getPixel(nx, ny);
+                const nMatch = Math.abs(nColor[0] - targetColor[0]) < threshold;
+                if (!nMatch) { isEdge = true; break; }
+                queue.push([nx, ny]);
+            }
+
+            if (isEdge && x % 3 === 0) { // Sample every 3rd pixel to keep SVG clean
+                points.push({x, y});
+            }
+        }
     }
-  }
-  return points;
+    // Sort points visually so the polygon doesn't cross itself
+    return sortPointsClockwise(points);
+}
+
+function sortPointsClockwise(points) {
+    if (points.length === 0) return [];
+    // Find center
+    const center = points.reduce((acc, p) => ({x: acc.x + p.x/points.length, y: acc.y + p.y/points.length}), {x:0, y:0});
+    // Sort by angle from center
+    return points.sort((a, b) => {
+        return Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x);
+    });
 }
 
 // --- CIRCLE SELECTION LOGIC ---
