@@ -2,8 +2,11 @@
 // Full-featured version with Synoptic-compatible export
 // Depends on undoRedo.js, projectIO.js, svgExport.js
 
-let offscreenCanvas = document.createElement('canvas');
-let offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
+let wandCanvas = document.createElement('canvas');
+let wandCtx = wandCanvas.getContext('2d', { willReadFrequently: true });
+const wandBtn = document.getElementById('wandBtn');
+
+wandBtn.onclick = () => setMode('wand');
 
 const regionFieldInput = document.getElementById('regionField');
 const svgNS = "http://www.w3.org/2000/svg";
@@ -96,6 +99,8 @@ function setMode(m) {
   if (m === 'hand') handBtn.classList.add('active');
   if (m === 'wand') wandBtn.classList.add('active');
   if (m === 'circleSelect') circleSelectBtn.classList.add('active');
+  document.body.classList.toggle('mode-wand', m === 'wand');
+    if(m === 'wand') wandBtn.classList.add('active');
    
   deselect();
 }
@@ -189,6 +194,11 @@ function loadBackgroundFromData(href, imgW, imgH) {
   canvas.insertBefore(img, canvas.firstChild);
   bgImage = { href, width: imgW, height: imgH };
   viewBox = { x: 0, y: 0, w: imgW, h: imgH };
+  wandCanvas.width = imgW;
+    wandCanvas.height = imgH;
+    const img = new Image();
+    img.onload = () => wandCtx.drawImage(img, 0, 0);
+    img.src = href;
 }
 
 function removeBackgroundImage() {
@@ -235,10 +245,12 @@ canvas.addEventListener('mousedown', ev => {
   const { x: svgX, y: svgY } = clientToSvg(ev);
 
   if (mode === 'wand') {
-    const pt = clientToSvg(ev);
-    runMagicWand(Math.round(pt.x), Math.round(pt.y));
-    return; // <--- ADD THIS to stop the manual polygon from starting
-  }
+    const raw = clientToSvg(ev);
+    const x = Math.round(raw.x);
+    const y = Math.round(raw.y);
+    autoTrace(x, y);
+    return;
+}
 
   if (mode === 'circleSelect') {
     selectRegionsInCircle(svgX, svgY, 50); // 50 is the radius
@@ -350,6 +362,76 @@ document.addEventListener('keyup', e => {
     activeCurvePoint = null;
   }
 });
+
+function autoTrace(startX, startY) {
+  if (!bgImage) return alert("Upload a background image first!");
+
+  // Get image data from the hidden canvas
+  const pixelData = wandCtx.getImageData(0, 0, wandCanvas.width, wandCanvas.height).data;
+  const getPixel = (x, y) => {
+    const i = (y * wandCanvas.width + x) * 4;
+    return [pixelData[i], pixelData[i+1], pixelData[i+2]];
+  };
+
+  const targetColor = getPixel(startX, startY);
+  const threshold = 40; // Adjust for sensitivity
+  let points = [];
+  const rayCount = 40; // Number of points to sample around the click
+
+  // Simple radial boundary scan
+  for (let i = 0; i < rayCount; i++) {
+    const angle = (i / rayCount) * Math.PI * 2;
+    for (let dist = 1; dist < 800; dist += 3) {
+      const px = Math.round(startX + Math.cos(angle) * dist);
+      const py = Math.round(startY + Math.sin(angle) * dist);
+      
+      if (px < 0 || px >= wandCanvas.width || py < 0 || py >= wandCanvas.height) break;
+
+      const color = getPixel(px, py);
+      const diff = Math.abs(color[0] - targetColor[0]) + 
+                   Math.abs(color[1] - targetColor[1]) + 
+                   Math.abs(color[2] - targetColor[2]);
+
+      if (diff > threshold) {
+        points.push({x: px, y: py});
+        break;
+      }
+    }
+  }
+
+  if (points.length > 3) {
+    const id = generateId();
+    const newRegion = {
+      id,
+      points,
+      color: defaultColorInput.value,
+      opacity: parseFloat(defaultOpacityInput.value),
+      field: ''
+    };
+    createRegionElement(newRegion);
+    regions.set(id, newRegion);
+    attachRegionEvents(newRegion);
+    updateRegionList();
+    capture();
+  }
+}
+
+    if (points.length > 3) {
+        const id = generateId();
+        const newRegion = {
+            id,
+            points,
+            color: defaultColorInput.value,
+            opacity: parseFloat(defaultOpacityInput.value),
+            field: ''
+        };
+        createRegionElement(newRegion);
+        regions.set(id, newRegion);
+        attachRegionEvents(newRegion);
+        updateRegionList();
+        capture();
+    }
+}
 
 // helpers
 
