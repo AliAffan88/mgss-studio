@@ -85,14 +85,25 @@ wandBtn.onclick = () => setMode('wand');
 
 function setMode(m) {
   mode = m;
+  
+  // Changes the cursor when in Hand mode
   document.body.classList.toggle('mode-hand', m === 'hand');
+  
+  // Highlight the correct button
   [polyBtn, bezierBtn, selectBtn, handBtn, wandBtn].forEach(b => b?.classList.remove('active'));
-  if (m === 'polygon') polyBtn.classList.add('active');
+  
+  if (m === 'poly') polyBtn.classList.add('active'); // Changed from 'polygon' to 'poly'
   if (m === 'bezier') bezierBtn.classList.add('active');
   if (m === 'select') selectBtn.classList.add('active');
   if (m === 'hand') handBtn.classList.add('active');
   if (m === 'wand') wandBtn.classList.add('active');
-  deselect();
+
+  // Clean up selection when switching modes
+  if (typeof deselect === 'function') {
+      deselect();
+  } else if (typeof deselectAll === 'function') {
+      deselectAll();
+  }
 }
 
 // UndoRedo snapshot helpers
