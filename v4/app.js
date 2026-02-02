@@ -172,6 +172,21 @@ function loadBackgroundFromData(href, imgW, imgH) {
   wandImg.src = href;
 }
 
+document.getElementById('removeBgBtn').addEventListener('click', () => {
+  const oldBg = canvas.querySelector('#bgImage');
+  if (oldBg) {
+    if (confirm('Are you sure you want to remove the background image?')) {
+      oldBg.remove();
+      bgImage = null;
+      // Clear the hidden wand canvas data
+      wandCtx.clearRect(0, 0, wandCanvas.width, wandCanvas.height);
+      capture();
+    }
+  } else {
+    alert("No background image to remove.");
+  }
+});
+
 // ===== MOUSE & DRAWING LOGIC =====
 canvas.addEventListener('mousedown', ev => {
   if (mode === 'wand') {
