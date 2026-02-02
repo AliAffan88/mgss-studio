@@ -1,30 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MGSS Studio v4</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-
 <body>
-  <div style="
-    position: fixed;
-    bottom: 8px;
-    right: 8px;
-    font-size: 12px;
-    opacity: 0.6;
-    background: #000;
-    color: #fff;
-    padding: 4px 8px;
-    border-radius: 4px;
-    z-index: 999;
-  ">
-    MGSS Studio v4
-  </div>
-
   <div id="app">
-
     <aside id="toolbar">
       <div class="brand">
         <strong>MGSS Studio v4</strong>
@@ -53,29 +28,19 @@
 
       <div class="section">
         <div class="section-title">Image / Export</div>
-
         <label class="file-label">
           Background Image
           <input id="uploadImage" type="file" accept="image/*"/>
         </label>
-
         <label style="display:block;margin-top:6px;">
-          <input type="checkbox" id="lockBgChk" />
-          Lock Background
+          <input type="checkbox" id="lockBgChk" /> Lock Background
         </label>
-
         <label style="display:block;margin-top:6px;">
-          <input type="checkbox" id="includeImage" />
-          Include image in full export
+          <input type="checkbox" id="includeImage" /> Include image in export
         </label>
-
         <div style="display:flex;gap:6px;margin-top:8px;">
-          <button id="exportPowerBI" class="actionBtn">Export (Power BI)</button>
+          <button id="exportPowerBI" class="actionBtn">Export (PBI)</button>
           <button id="exportFull" class="actionBtn">Export Full</button>
-        </div>
-
-        <div style="margin-top:6px;font-size:12px;color:#666">
-          <input id="autosave" type="checkbox" /> Auto-save project
         </div>
       </div>
 
@@ -86,86 +51,45 @@
         <button id="saveProjectBtn">Save Project</button>
         <input id="loadProjectFile" type="file" accept=".mgss.json" />
       </div>
-
-      <div class="section small">
-        <div class="section-title">Defaults</div>
-        <label>
-          Default Fill
-          <input type="color" id="defaultColor" value="#bfbfbf" />
-        </label>
-        <label>
-          Opacity
-          <input type="range" id="defaultOpacity" min="0" max="1" step="0.05" value="0.3" />
-        </label>
-      </div>
-
-      <div class="section tips">
-        <div class="section-title">Tips</div>
-        <ul>
-          <li>Click to add points</li>
-          <li>Double-click or Enter to finish</li>
-          <li>ESC removes last point</li>
-          <li>Shift + click to insert vertex</li>
-          <li>Right-click handle to delete vertex</li>
-          <li>Always Reset Zoom Before Exporting</li>
-        </ul>
-      </div>
-      
     </aside>
 
     <main id="main">
       <div id="canvasWrapper">
-        <svg id="svgCanvas" xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="svgCanvas" xmlns="http://www.w3.org/2000/svg" data-zoom="1"></svg>
       </div>
     </main>
 
     <aside id="sidepanel">
-
       <div class="section collapsible open" id="regionPropsSection">
-        <div class="section-title collapsible-header">
-          Region Properties
-          <span class="chevron">▾</span>
-        </div>
-
+        <div class="section-title collapsible-header">Region Properties <span>▾</span></div>
         <div class="collapsible-body">
           <label>Region ID</label>
-          <input id="regionID" placeholder="Auto-generated" />
-
+          <input id="regionID" />
           <label>Data Field</label>
-          <input id="regionField" placeholder="e.g. Sales, Revenue" />
-
+          <input id="regionField" />
           <label>Fill Color</label>
           <input id="fillColor" type="color" />
-
           <label>Opacity</label>
           <input id="fillOpacity" type="range" min="0" max="1" step="0.05" />
-
-          <div style="display:flex;gap:6px;margin-top:6px;">
-            <button id="renameBtn" class="actionBtn">Apply Rename</button>
-            <button id="centerBtn" class="actionBtn">Center</button>
+          <div style="display:flex;gap:4px;margin-top:8px;">
+            <button id="frontBtn" class="actionBtn">Bring Front</button>
+            <button id="backBtn" class="actionBtn">Send Back</button>
           </div>
+          <button id="centerBtn" class="actionBtn" style="margin-top:4px;">Center View</button>
         </div>
       </div>
 
       <div class="section collapsible open">
-        <div class="section-title collapsible-header">
-          Regions
-          <span class="chevron">▾</span>
-        </div>
-
+        <div class="section-title collapsible-header">Regions <span>▾</span></div>
         <div class="collapsible-body">
           <ul id="regionList"></ul>
         </div>
       </div>
+    </aside>
+  </div>
 
-      <div class="section collapsible">
-        <div class="section-title collapsible-header">
-          Synoptic Settings
-          <span class="chevron">▾</span>
-        </div>
-
-        <div class="collapsible-body">
-          <label>Default Region Color</label>
-          <input type="color" id="synDefaultColor" value="#bfbfbf" />
-
-          <label>Default Op
+  <script src="undoRedo.js"></script>
+  <script src="projectIO.js"></script>
+  <script src="svgExport.js"></script>
+  <script src="app.js"></script>
+</body>
