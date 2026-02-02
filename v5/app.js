@@ -34,6 +34,7 @@ const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; // 20% per click
 const lockBgChk = document.getElementById('lockBgChk');
 
+
 // ===== THEME HANDLING =====
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -55,6 +56,9 @@ themeToggle.addEventListener('click', () => {
 
 let isAltDown = false;
 let activeCurvePoint = null;
+
+let offscreenCanvas = document.createElement('canvas');
+let offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
 
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
 let isPanning = false;
@@ -974,66 +978,90 @@ async function performAutoWand(svgX, svgY) {
 }
 
 // Simple Boundary Tracer (Sampled every 5th edge pixel for performance)
-function tracePathFromPixel(imgData, startX, startY) {
-    const width = imgData.width;
-    const height = imgData.height;
-    const data = imgData.data;
-    const points = [];
-    const visited = new Uint8Array(width * height);
+function runMagicWand(startX, startY) {
+    if (!bgImage) return;
 
-    const getPixel = (x, y) => {
-        const i = (y * width + x) * 4;
-        return [data[i], data[i+1], data[i+2]];
-    };
+    // Sync offscreen canvas to current background
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = bgImage.href;
+    
+    img.onload = () => {
+        offscreenCanvas.width = bgImage.width;
+        offscreenCanvas.height = bgImage.height;
+        offscreenCtx.drawImage(img, 0, 0);
 
-    const targetColor = getPixel(startX, startY);
-    const threshold = parseInt(document.getElementById('wandThreshold')?.value || 30);
-    const queue = [[startX, startY]];
+        const threshold = parseInt(document.getElementById('wandThreshold')?.value || 30);
+        const width = offscreenCanvas.width;
+        const height = offscreenCanvas.height;
+        
+        if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
 
-    while (queue.length > 0 && points.length < 2000) {
-        const [x, y] = queue.shift();
-        const idx = y * width + x;
-        if (visited[idx]) continue;
-        visited[idx] = 1;
+        const imgData = offscreenCtx.getImageData(0, 0, width, height);
+        const pixels = imgData.data;
+        const visited = new Uint8Array(width * height);
+        const stack = [[startX, startY]];
+        
+        const startIdx = (startY * width + startX) * 4;
+        const [startR, startG, startB] = [pixels[startIdx], pixels[startIdx+1], pixels[startIdx+2]];
+        const regionPixels = [];
 
-        const color = getPixel(x, y);
-        const isMatch = Math.abs(color[0] - targetColor[0]) < threshold &&
-                        Math.abs(color[1] - targetColor[1]) < threshold &&
-                        Math.abs(color[2] - targetColor[2]) < threshold;
+        while (stack.length > 0) {
+            const [x, y] = stack.pop();
+            const idx = y * width + x;
+            if (visited[idx]) continue;
+            visited[idx] = 1;
 
-        if (isMatch) {
-            // --- EDGE DETECTION LOGIC ---
-            // Only add point if one of its neighbors is NOT a match (it's a border)
-            let isEdge = false;
-            const neighbors = [[x+1,y],[x-1,y],[x,y+1],[x,y-1]];
-            
-            for (const [nx, ny] of neighbors) {
-                if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
-                    isEdge = true; break;
+            const pIdx = idx * 4;
+            const diff = Math.sqrt(
+                Math.pow(pixels[pIdx] - startR, 2) + 
+                Math.pow(pixels[pIdx+1] - startG, 2) + 
+                Math.pow(pixels[pIdx+2] - startB, 2)
+            );
+
+            if (diff < threshold) {
+                // Only store pixels on the edge to keep it fast
+                let isEdge = x===0 || x===width-1 || y===0 || y===height-1;
+                if (!isEdge) {
+                    // Check if neighbors are outside threshold
+                    const nIdx = [(y*width+(x+1))*4, (y*width+(x-1))*4, ((y+1)*width+x)*4, ((y-1)*width+x)*4];
+                    isEdge = nIdx.some(i => Math.abs(pixels[i]-startR) > threshold);
                 }
-                const nColor = getPixel(nx, ny);
-                const nMatch = Math.abs(nColor[0] - targetColor[0]) < threshold;
-                if (!nMatch) { isEdge = true; break; }
-                queue.push([nx, ny]);
-            }
+                
+                if (isEdge) regionPixels.push({x, y});
 
-            if (isEdge && x % 3 === 0) { // Sample every 3rd pixel to keep SVG clean
-                points.push({x, y});
+                if (x > 0) stack.push([x - 1, y]);
+                if (x < width - 1) stack.push([x + 1, y]);
+                if (y > 0) stack.push([x, y - 1]);
+                if (y < height - 1) stack.push([x, y + 1]);
             }
         }
-    }
-    // Sort points visually so the polygon doesn't cross itself
-    return sortPointsClockwise(points);
+
+        if (regionPixels.length > 10) {
+            const id = generateId();
+            // Sort points so the polygon doesn't "zig-zag"
+            const sortedPoints = sortPointsRadial(regionPixels);
+            const r = {
+                id,
+                points: sortedPoints,
+                color: defaultColorInput.value,
+                opacity: parseFloat(defaultOpacityInput.value),
+                field: ''
+            };
+            createRegionElement(r);
+            regions.set(id, r);
+            attachRegionEvents(r);
+            updateRegionList();
+            capture();
+        }
+    };
 }
 
-function sortPointsClockwise(points) {
-    if (points.length === 0) return [];
-    // Find center
+function sortPointsRadial(points) {
     const center = points.reduce((acc, p) => ({x: acc.x + p.x/points.length, y: acc.y + p.y/points.length}), {x:0, y:0});
-    // Sort by angle from center
-    return points.sort((a, b) => {
-        return Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x);
-    });
+    return points
+        .filter((_, i) => i % 4 === 0) // Optimization: use every 4th point
+        .sort((a, b) => Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x));
 }
 
 // --- CIRCLE SELECTION LOGIC ---
