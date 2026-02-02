@@ -32,6 +32,13 @@ const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; // 20% per click
 const lockBgChk = document.getElementById('lockBgChk');
 
+
+let wandCanvas = document.createElement('canvas');
+let wandCtx = wandCanvas.getContext('2d', { willReadFrequently: true });
+const wandBtn = document.getElementById('wandBtn');
+
+wandBtn.onclick = () => setMode('wand');
+
 // ===== THEME HANDLING =====
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -81,11 +88,13 @@ handBtn.onclick = () => setMode('hand');
 function setMode(m) {
   mode = m;
   document.body.classList.toggle('mode-hand', m === 'hand');
+  document.body.classList.toggle('mode-wand', m === 'wand'); // ADD THIS
   document.querySelectorAll('.modeBtn').forEach(b => b.classList.remove('active'));
   if (m === 'polygon') polyBtn.classList.add('active');
   if (m === 'bezier') bezierBtn.classList.add('active');
   if (m === 'select') selectBtn.classList.add('active');
   if (m === 'hand') handBtn.classList.add('active');
+  if (m === 'wand') wandBtn.classList.add('active'); // ADD THIS
   deselect();
 }
 
@@ -178,6 +187,11 @@ function loadBackgroundFromData(href, imgW, imgH) {
   canvas.insertBefore(img, canvas.firstChild);
   bgImage = { href, width: imgW, height: imgH };
   viewBox = { x: 0, y: 0, w: imgW, h: imgH };
+  wandCanvas.width = imgW;
+  wandCanvas.height = imgH;
+  const img = new Image();
+  img.onload = () => wandCtx.drawImage(img, 0, 0);
+  img.src = href;
 }
 
 function removeBackgroundImage() {
@@ -221,6 +235,11 @@ resetZoomBtn.addEventListener('click', () => {
 
 // Mouse events
 canvas.addEventListener('mousedown', ev => {
+  if (mode === 'wand') {
+    const raw = clientToSvg(ev);
+    autoTrace(Math.round(raw.x), Math.round(raw.y));
+    return;
+  }
   if (mode === 'hand') {
     isPanning = true;
     panStart = { x: ev.clientX, y: ev.clientY };
@@ -908,3 +927,54 @@ document.querySelectorAll('.collapsible-header').forEach(header => {
     section.classList.toggle('open');
   });
 });
+
+function autoTrace(startX, startY) {
+  if (!bgImage) return alert("Upload a background image first!");
+
+  const pixelData = wandCtx.getImageData(0, 0, wandCanvas.width, wandCanvas.height).data;
+  const getPixel = (x, y) => {
+    const i = (y * wandCanvas.width + x) * 4;
+    return [pixelData[i], pixelData[i+1], pixelData[i+2]];
+  };
+
+  const targetColor = getPixel(startX, startY);
+  const threshold = 40; 
+  let points = [];
+  const rayCount = 40; 
+
+  for (let i = 0; i < rayCount; i++) {
+    const angle = (i / rayCount) * Math.PI * 2;
+    for (let dist = 1; dist < 800; dist += 3) {
+      const px = Math.round(startX + Math.cos(angle) * dist);
+      const py = Math.round(startY + Math.sin(angle) * dist);
+      
+      if (px < 0 || px >= wandCanvas.width || py < 0 || py >= wandCanvas.height) break;
+
+      const color = getPixel(px, py);
+      const diff = Math.abs(color[0] - targetColor[0]) + 
+                   Math.abs(color[1] - targetColor[1]) + 
+                   Math.abs(color[2] - targetColor[2]);
+
+      if (diff > threshold) {
+        points.push({x: px, y: py});
+        break;
+      }
+    }
+  }
+
+  if (points.length > 3) {
+    const id = generateId();
+    const newRegion = {
+      id,
+      points,
+      color: defaultColorInput.value,
+      opacity: parseFloat(defaultOpacityInput.value),
+      field: ''
+    };
+    createRegionElement(newRegion);
+    regions.set(id, newRegion);
+    attachRegionEvents(newRegion);
+    updateRegionList();
+    capture();
+  }
+}
