@@ -229,7 +229,8 @@ canvas.addEventListener('mousedown', ev => {
   }
 
   if (ev.target.classList && ev.target.classList.contains('handle')) return;
-  const { x: svgX, y: svgY } = clientToSvg(ev);
+  const raw = clientToSvg(ev);
+  const {x: svgX, y: svgY} = getSnappedPoint(raw.x, raw.y); // Apply Snap
   if (mode === 'polygon' || mode === 'bezier') {
     if (!drawing) {
       startRegion(svgX, svgY);
@@ -256,6 +257,9 @@ canvas.addEventListener('mousemove', ev => {
 
   const { x, y } = clientToSvg(ev);
   if (drawing) {
+    const raw = clientToSvg(ev);
+    const {x, y} = getSnappedPoint(raw.x, raw.y); // Apply Snap
+    if(drawing){ updateTempLine(x,y); showTempCursor(x,y); }
     updateTempLine(x, y);
     showTempCursor(x, y);
   }
@@ -323,6 +327,32 @@ document.addEventListener('keyup', e => {
 });
 
 // helpers
+
+const SNAP_THRESHOLD = 10;
+function getSnappedPoint(svgX, svgY) {
+  let bestPoint = { x: svgX, y: svgY };
+  const currentZoom = parseFloat(canvas.dataset.zoom || 1);
+  const adjustedThreshold = BASE_SNAP_THRESHOLD / currentZoom;
+  let minDistance = SNAP_THRESHOLD;
+
+  // Look through every point in every region
+  regions.forEach(region => {
+    // Don't snap to the region we are currently drawing
+    if (drawing && current && region.id === current.id) return;
+    if (selected && region.id === selected.id) return;
+
+    region.points.forEach(p => {
+      const d = distance(svgX, svgY, p.x, p.y);
+      if (d < minDistance) {
+        minDistance = d;
+        bestPoint = { x: p.x, y: p.y };
+      }
+    });
+  });
+
+  return bestPoint;
+}
+
 function clientToSvg(ev) {
   const pt = canvas.createSVGPoint();
   pt.x = ev.clientX;
@@ -537,6 +567,7 @@ function createHandles(r) {
 function handleDragging(ev) {
   if (!draggingHandle || !selected) return;
   const pt = clientToSvg(ev);
+  const {x, y} = getSnappedPoint(raw.x, raw.y);
   const mx = pt.x,
     my = pt.y;
   const nx = mx - dragOffset[0],
@@ -867,6 +898,8 @@ function projectPointToSegment(p, a, b) {
 }
 
 function distance(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
+
+
 
 document.querySelectorAll('.collapsible-header').forEach(header => {
   header.addEventListener('click', () => {
