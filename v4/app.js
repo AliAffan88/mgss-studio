@@ -86,7 +86,7 @@ wandBtn.onclick = () => setMode('wand');
 function setMode(m) {
   mode = m;
   document.body.classList.toggle('mode-hand', m === 'hand');
-  document.querySelectorAll('.modeBtn').forEach(b => b.classList.remove('active'));
+  [polyBtn, bezierBtn, selectBtn, handBtn, wandBtn].forEach(b => b?.classList.remove('active'));
   if (m === 'polygon') polyBtn.classList.add('active');
   if (m === 'bezier') bezierBtn.classList.add('active');
   if (m === 'select') selectBtn.classList.add('active');
