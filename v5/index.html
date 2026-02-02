@@ -73,7 +73,12 @@
           <input type="checkbox" id="includeImage" />
           Include image in full export
         </label>
-
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="heatmapExportChk"> Export for Heatmapping
+          </label>
+          <small>(Removes fixed colors so Power BI can color areas)</small>
+        </div>
         <div style="display:flex; gap:6px; margin-top:8px;">
           <button id="exportPowerBI" class="actionBtn">Export (Power BI)</button>
           <button id="exportFull" class="actionBtn">Export Full</button>
