@@ -163,11 +163,10 @@ uploadImage.addEventListener('change', ev => {
   reader.onload = e => {
     const href = e.target.result;
     const img = new Image();
-    img.crossOrigin = "Anonymous";
     img.onload = () => {
       loadBackgroundFromData(href, img.naturalWidth, img.naturalHeight);
-      offscreenCanvas.width = img.width;
-      offscreenCanvas.height = img.height;
+      offscreenCanvas.width = img.naturalwidth;
+      offscreenCanvas.height = img.naturalheight;
       offscreenCtx.drawImage(img, 0, 0);
       capture();
     };
@@ -893,7 +892,6 @@ document.querySelectorAll('.collapsible-header').forEach(header => {
 
 canvas.addEventListener('mousedown', (e) => {
     if (mode !== 'wand') return;
-    e.stopPropagation();
     const pt = clientToSvg(e);
     runMagicWand(Math.round(pt.x), Math.round(pt.y));
 });
