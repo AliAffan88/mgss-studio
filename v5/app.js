@@ -2,6 +2,9 @@
 // Full-featured version with Synoptic-compatible export
 // Depends on undoRedo.js, projectIO.js, svgExport.js
 
+let offscreenCanvas = document.createElement('canvas');
+let offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
+
 const regionFieldInput = document.getElementById('regionField');
 const svgNS = "http://www.w3.org/2000/svg";
 const canvas = document.getElementById('svgCanvas');
@@ -56,9 +59,6 @@ themeToggle.addEventListener('click', () => {
 
 let isAltDown = false;
 let activeCurvePoint = null;
-
-let offscreenCanvas = document.createElement('canvas');
-let offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
 
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
 let isPanning = false;
@@ -235,8 +235,9 @@ canvas.addEventListener('mousedown', ev => {
   const { x: svgX, y: svgY } = clientToSvg(ev);
 
   if (mode === 'wand') {
-    performAutoWand(svgX, svgY);
-    return;
+    const pt = clientToSvg(ev);
+    runMagicWand(Math.round(pt.x), Math.round(pt.y));
+    return; // <--- ADD THIS to stop the manual polygon from starting
   }
 
   if (mode === 'circleSelect') {
@@ -255,16 +256,7 @@ canvas.addEventListener('mousedown', ev => {
   const snapped = getSnappedPoint(raw.x, raw.y);
   const svgX = snapped.x;
   const svgY = snapped.y; // Apply Snap
-  if (mode === 'wand') {
-    performAutoWand(svgX, svgY);
-    return;
-  }
-
-  if (mode === 'circleSelect') {
-    // 50 is the radius, you can change this value
-    selectRegionsInCircle(svgX, svgY, 50); 
-    return;
-  }
+  
   if (mode === 'polygon' || mode === 'bezier') {
     if (!drawing) {
       startRegion(svgX, svgY);
@@ -977,6 +969,36 @@ async function performAutoWand(svgX, svgY) {
   }
 }
 
+
+function createMagicRegion(points) {
+    if (points.length < 10) return;
+
+    // 1. Find the center of the pixel mass
+    const center = points.reduce((acc, p) => ({
+        x: acc.x + p.x / points.length,
+        y: acc.y + p.y / points.length
+    }), { x: 0, y: 0 });
+
+    // 2. Sort points by angle around that center so they form a loop
+    const sortedPoints = points
+        .filter((_, i) => i % 5 === 0) // Optimization: take every 5th point for speed
+        .sort((a, b) => Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x));
+
+    const id = generateId();
+    const r = {
+        id,
+        points: sortedPoints,
+        field: '',
+        color: defaultColorInput.value,
+        opacity: parseFloat(defaultOpacityInput.value)
+    };
+
+    createRegionElement(r);
+    regions.set(id, r);
+    attachRegionEvents(r);
+    updateRegionList();
+    capture();
+}
 // Simple Boundary Tracer (Sampled every 5th edge pixel for performance)
 function runMagicWand(startX, startY) {
     if (!bgImage) return;
