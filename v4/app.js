@@ -25,12 +25,16 @@ const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 const autosaveCheckbox = document.getElementById('autosave');
 const handBtn = document.getElementById('handBtn');
+const wandBtn = document.getElementById('wandBtn');
+const wandThreshold = document.getElementById('wandThreshold');
 const zoomInBtn = document.getElementById('zoomInBtn');
 const zoomOutBtn = document.getElementById('zoomOutBtn');
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 10;
 const ZOOM_STEP = 1.1; // 20% per click
 const lockBgChk = document.getElementById('lockBgChk');
+const offscreenCanvas = document.createElement('canvas');
+const offscreenCtx = offscreenCanvas.getContext('2d');
 
 // ===== THEME HANDLING =====
 function applyTheme(theme) {
@@ -57,7 +61,7 @@ let activeCurvePoint = null;
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
-
+let wandModeActive = false;
 let mode = 'polygon';
 let drawing = false;
 let current = null;
@@ -77,6 +81,7 @@ polyBtn.onclick = () => setMode('polygon');
 bezierBtn.onclick = () => setMode('bezier');
 selectBtn.onclick = () => setMode('select');
 handBtn.onclick = () => setMode('hand');
+wandBtn.onclick = () => setMode('wand');
 
 function setMode(m) {
   mode = m;
@@ -86,6 +91,7 @@ function setMode(m) {
   if (m === 'bezier') bezierBtn.classList.add('active');
   if (m === 'select') selectBtn.classList.add('active');
   if (m === 'hand') handBtn.classList.add('active');
+  if (m === 'wand') wandBtn.classList.add('active');
   deselect();
 }
 
@@ -153,6 +159,9 @@ uploadImage.addEventListener('change', ev => {
     const img = new Image();
     img.onload = () => {
       loadBackgroundFromData(href, img.naturalWidth, img.naturalHeight);
+      offscreenCanvas.width = img.width;
+      offscreenCanvas.height = img.height;
+      offscreenCtx.drawImage(img, 0, 0);
       capture();
     };
     img.src = href;
@@ -874,3 +883,69 @@ document.querySelectorAll('.collapsible-header').forEach(header => {
     section.classList.toggle('open');
   });
 });
+
+canvas.addEventListener('mousedown', (e) => {
+    if (mode !== 'wand') return;
+    const pt = clientToSvg(e);
+    runMagicWand(Math.round(pt.x), Math.round(pt.y));
+});
+
+function runMagicWand(startX, startY) {
+    const threshold = parseInt(wandThreshold.value);
+    const width = offscreenCanvas.width;
+    const height = offscreenCanvas.height;
+    
+    if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
+
+    const imgData = offscreenCtx.getImageData(0, 0, width, height);
+    const pixels = imgData.data;
+    const visited = new Uint8Array(width * height);
+    const stack = [[startX, startY]];
+    
+    const startIdx = (startY * width + startX) * 4;
+    const startR = pixels[startIdx];
+    const startG = pixels[startIdx+1];
+    const startB = pixels[startIdx+2];
+
+    const regionPixels = [];
+
+    while (stack.length > 0) {
+        const [x, y] = stack.pop();
+        const idx = y * width + x;
+
+        if (visited[idx]) continue;
+        visited[idx] = 1;
+
+        const pIdx = idx * 4;
+        const r = pixels[pIdx];
+        const g = pixels[pIdx+1];
+        const b = pixels[pIdx+2];
+
+        const diff = Math.sqrt(
+            Math.pow(r - startR, 2) + 
+            Math.pow(g - startG, 2) + 
+            Math.pow(b - startB, 2)
+        );
+
+        if (diff < threshold) {
+            regionPixels.push({x, y});
+            if (x > 0) stack.push([x - 1, y]);
+            if (x < width - 1) stack.push([x + 1, y]);
+            if (y > 0) stack.push([x, y - 1]);
+            if (y < height - 1) stack.push([x, y + 1]);
+        }
+    }
+
+    if (regionPixels.length > 10) {
+        // Simple bounding box to points (for better results, use a proper hull algorithm)
+        // Here we just create a simple rectangle/polygon based on the data
+        createMagicRegion(regionPixels); 
+    }
+}
+
+function createMagicRegion(points) {
+    // Logic to convert pixel clusters to SVG points
+    // Then call your existing createRegionElement(type, data)
+    console.log("Magic Wand detected area with " + points.length + " pixels");
+    // Implementation of a hull algorithm like Monotone Chain would go here
+}
