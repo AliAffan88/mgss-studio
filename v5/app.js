@@ -228,6 +228,17 @@ resetZoomBtn.addEventListener('click', () => {
 
 // Mouse events
 canvas.addEventListener('mousedown', ev => {
+  const { x: svgX, y: svgY } = clientToSvg(ev);
+
+  if (mode === 'wand') {
+    performAutoWand(svgX, svgY);
+    return;
+  }
+
+  if (mode === 'circleSelect') {
+    selectRegionsInCircle(svgX, svgY, 50); // 50 is the radius
+    return;
+  }
   if (mode === 'hand') {
     isPanning = true;
     panStart = { x: ev.clientX, y: ev.clientY };
@@ -967,33 +978,29 @@ function tracePathFromPixel(imgData, startX, startY) {
   const width = imgData.width;
   const height = imgData.height;
   const data = imgData.data;
+  const points = [];
 
-  // Helper to get pixel color
   const getPixel = (x, y) => {
     const i = (y * width + x) * 4;
     return [data[i], data[i+1], data[i+2]];
   };
 
   const targetColor = getPixel(startX, startY);
-  const points = [];
   const visited = new Set();
   const queue = [[startX, startY]];
 
-  // Simple flood-fill to find edge points
-  while(queue.length > 0 && points.length < 1000) {
+  while(queue.length > 0 && points.length < 500) {
     const [x, y] = queue.shift();
     const key = `${x},${y}`;
     if (visited.has(key)) continue;
     visited.add(key);
 
     const color = getPixel(x, y);
-    const isMatch = Math.abs(color[0]-targetColor[0]) < 30; // 30 is the sensitivity
+    // Tolerance check (30)
+    const isMatch = Math.abs(color[0]-targetColor[0]) < 30;
 
     if (isMatch) {
-      // If it's a boundary pixel, add to points
-      if (x % 5 === 0) points.push({x, y}); // Sample every 5th pixel for performance
-      
-      // Check neighbors
+      if (x % 4 === 0) points.push({x, y}); // Sample every 4th pixel for speed
       [[x+1,y],[x-1,y],[x,y+1],[x,y-1]].forEach(([nx, ny]) => {
         if (nx >= 0 && nx < width && ny >= 0 && ny < height) queue.push([nx, ny]);
       });
@@ -1005,15 +1012,13 @@ function tracePathFromPixel(imgData, startX, startY) {
 // --- CIRCLE SELECTION LOGIC ---
 function selectRegionsInCircle(centerX, centerY, radius = 50) {
   regions.forEach(r => {
-    // Check if any point of the region falls within the circle radius
     const isInside = r.points.some(p => {
       const dist = Math.sqrt((p.x - centerX)**2 + (p.y - centerY)**2);
       return dist <= radius;
     });
+    
     if (isInside) {
-      // Logic to highlight/select multiple
-      r.element.setAttribute('stroke-width', '3');
-      selectRegion(r);
+      selectRegion(r); // This triggers the side panel and UI highlight
     }
   });
 }
