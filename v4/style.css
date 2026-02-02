@@ -132,6 +132,10 @@ html, body, #app {
   cursor:crosshair;
 }
 
+.mode-wand #svgCanvas {
+    cursor: url('https://img.icons8.com/ios-filled/20/magic-wand.png'), auto;
+}
+
 .mode-hand #svgCanvas {
   cursor:grab;
 }
