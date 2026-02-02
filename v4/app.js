@@ -229,8 +229,8 @@ canvas.addEventListener('mousedown', ev => {
   }
 
   if (ev.target.classList && ev.target.classList.contains('handle')) return;
-  const raw = clientToSvg(ev);
-  const {x: svgX, y: svgY} = getSnappedPoint(raw.x, raw.y); // Apply Snap
+  const pt = clientToSvg(ev);
+  const { x, y } = getSnappedPoint(pt.x, pt.y); // Apply Snap
   if (mode === 'polygon' || mode === 'bezier') {
     if (!drawing) {
       startRegion(svgX, svgY);
