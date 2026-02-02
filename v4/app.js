@@ -163,6 +163,7 @@ uploadImage.addEventListener('change', ev => {
   reader.onload = e => {
     const href = e.target.result;
     const img = new Image();
+    img.crossOrigin = "Anonymous";
     img.onload = () => {
       loadBackgroundFromData(href, img.naturalWidth, img.naturalHeight);
       offscreenCanvas.width = img.width;
@@ -892,6 +893,7 @@ document.querySelectorAll('.collapsible-header').forEach(header => {
 
 canvas.addEventListener('mousedown', (e) => {
     if (mode !== 'wand') return;
+    e.stopPropagation();
     const pt = clientToSvg(e);
     runMagicWand(Math.round(pt.x), Math.round(pt.y));
 });
@@ -949,9 +951,39 @@ function runMagicWand(startX, startY) {
     }
 }
 
-function createMagicRegion(points) {
-    // Logic to convert pixel clusters to SVG points
-    // Then call your existing createRegionElement(type, data)
-    console.log("Magic Wand detected area with " + points.length + " pixels");
-    // Implementation of a hull algorithm like Monotone Chain would go here
+function createMagicRegion(pixels) {
+    if (pixels.length === 0) return;
+
+    // Find the edges of the clicked color area
+    let minX = pixels[0].x, maxX = pixels[0].x;
+    let minY = pixels[0].y, maxY = pixels[0].y;
+
+    for (let p of pixels) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+    }
+
+    const id = generateId();
+    const newRegion = {
+        id: id,
+        points: [
+            { x: minX, y: minY },
+            { x: maxX, y: minY },
+            { x: maxX, y: maxY },
+            { x: minX, y: maxY }
+        ],
+        color: defaultColorInput.value,
+        opacity: parseFloat(defaultOpacityInput.value),
+        field: ""
+    };
+
+    // Create and add to the system
+    createRegionElement(newRegion);
+    regions.set(id, newRegion);
+    attachRegionEvents(newRegion);
+    updateRegionList();
+    selectRegion(newRegion); // Auto-select so you can see it worked
+    capture();
 }
