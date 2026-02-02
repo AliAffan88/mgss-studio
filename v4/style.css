@@ -4,12 +4,10 @@
   --accent: #007acc;
   --text: #222;
   --muted: #666;
-
   --border: #dcdcdc;
   --btn-bg: #ffffff;
   --btn-text: #222;
   --canvas-bg: #f4f4f4;
-  --hover: #f0f0f0;
 }
 
 [data-theme="dark"] {
@@ -18,126 +16,66 @@
   --accent: #3aa0ff;
   --text: #e6eef8;
   --muted: #9aa6b2;
-
   --border: #1f2a3a;
-  --btn-bg: #0f1720;
+  --btn-bg: #162030;
   --btn-text: #e6eef8;
   --canvas-bg: #081018;
-  --hover: #162030;
 }
 
 * { box-sizing: border-box; }
+body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
 
-html, body, #app {
-  height: 100%;
-  margin: 0;
-  font-family: Inter, Segoe UI, Arial, sans-serif;
-  color: var(--text);
-}
+#app { display: flex; height: 100vh; width: 100vw; }
 
-#app {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-  background: var(--bg);
-}
-
-/* Toolbar */
-#toolbar {
-  width: 300px;
+#toolbar, #sidepanel {
+  width: 260px;
   background: var(--panel);
   border-right: 1px solid var(--border);
-  padding: 12px;
-  overflow: auto;
-}
-
-.brand {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  flex-direction: column;
+  padding: 10px;
+  overflow-y: auto;
 }
 
-.section {
-  margin-bottom: 12px;
-}
+#sidepanel { border-right: none; border-left: 1px solid var(--border); }
 
-.section-title {
-  font-weight: 600;
-  margin-bottom: 6px;
-  font-size: 13px;
-  color: var(--muted);
-}
+#main { flex: 1; position: relative; background: var(--canvas-bg); overflow: hidden; display: flex; }
 
-.tools button,
-.actionBtn,
-.modeBtn,
-#undoBtn,
-#redoBtn,
-#saveProjectBtn,
-#delBtn {
-  padding: 8px 10px;
+#canvasWrapper { flex: 1; display: flex; justify-content: center; align-items: center; overflow: auto; }
+
+#svgCanvas { background: white; box-shadow: 0 0 10px rgba(0,0,0,0.2); cursor: crosshair; }
+
+/* Buttons & Inputs */
+button, input, select {
+  width: 100%;
   margin: 4px 0;
-  cursor: pointer;
-  border: 1px solid var(--border);
+  padding: 8px;
   background: var(--btn-bg);
   color: var(--btn-text);
-  width: 100%;
-  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-.modeBtn.active {
-  background: var(--accent);
-  color: #fff;
-  border: none;
+button:hover { background: var(--accent); color: white; }
+
+.modeBtn.active { background: var(--accent); color: white; }
+
+.section-title { font-size: 12px; font-weight: bold; color: var(--accent); margin-top: 10px; text-transform: uppercase; }
+
+/* Handle/Vertex Style */
+.handle circle { fill: white; stroke: var(--accent); stroke-width: 2; cursor: move; }
+
+/* Region List */
+#regionList { list-style: none; padding: 0; }
+#regionList li { 
+  padding: 6px; 
+  border-bottom: 1px solid var(--border); 
+  cursor: pointer; 
+  font-size: 13px; 
 }
+#regionList li:hover { background: var(--accent); color: white; }
 
-.file-label input {
-  display: block;
-  margin-top: 6px;
-}
-
-.small { font-size: 13px; }
-
-.tips ul {
-  margin: 6px 0 0 18px;
-  padding: 0;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-/* Canvas */
-#main {
-  flex: 1;
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
-  overflow: hidden;
-  padding: 12px;
-}
-
-#canvasWrapper {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: auto;
-  background: var(--canvas-bg);
-}
-
-#svgCanvas {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  display: block;
-  cursor: crosshair;
-}
-
-.mode-hand #svgCanvas {
-  cursor: grab;
-}
-
-/* MAGIC WAND CURSOR INJECTION */
-.mode-wand #svgCanvas {
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 4 5 2"/><path d="m17.7 7
+/* Collapsible */
+.collapsible-body { display: none; }
+.collapsible.open .collapsible-body { display: block; }
