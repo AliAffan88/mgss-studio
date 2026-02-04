@@ -57,6 +57,8 @@ let isPanning = false;
 let panStart = { x: 0, y: 0 };
 
 let mode = 'polygon';
+let isAltDown = false;
+let activeCurvePoint = null;
 let drawing = false;
 let current = null;
 let regionCounter = 1;
@@ -720,6 +722,7 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
 
 
 
