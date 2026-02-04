@@ -288,6 +288,10 @@ canvas.addEventListener('mousemove', ev=>{
 canvas.addEventListener('dblclick', ev=>{ if(drawing) finalizeRegion(); });
 
 document.addEventListener('keydown', ev=>{
+  if (ev.key === 'Alt') {
+    ev.preventDefault();
+    isAltDown = true;
+  }
   if(ev.key==='Escape'||ev.key==='Backspace'){
     if(drawing){
       if(current.points.length>0){ current.points.pop(); if(current.points.length===0) cancelCurrent(); else updateRegionElement(current); }
@@ -573,6 +577,10 @@ document.addEventListener('keydown', ev => {
 });
 
 document.addEventListener('keyup', ev => {
+  if (ev.key === 'Alt') {
+    isAltDown = false;
+    activeCurvePoint = null;
+  }
   if (ev.code === 'Space') canvas.style.cursor = 'default';
 });
 
@@ -712,6 +720,7 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
 
 
 
