@@ -292,8 +292,10 @@ canvas.addEventListener('dblclick', ev=>{ if(drawing) finalizeRegion(); });
 document.addEventListener('keydown', ev=>{
   if (ev.key === 'Alt') {
     ev.preventDefault();
+    ev.stopImmediatePropagation();
     isAltDown = true;
   }
+  if (ev.code === 'Space') canvas.style.cursor = 'grab';
   if(ev.key==='Escape'||ev.key==='Backspace'){
     if(drawing){
       if(current.points.length>0){ current.points.pop(); if(current.points.length===0) cancelCurrent(); else updateRegionElement(current); }
@@ -574,18 +576,11 @@ canvas.addEventListener('wheel', ev => {
   applyZoom(factor, pt.x, pt.y);
 });
 
-document.addEventListener('keydown', ev => {
-  if (ev.key === 'Alt') {
-    ev.preventDefault(); 
-    isAltDown = true;
-    return; // Stop further processing for this specific key press
-  }
-  if (ev.code === 'Space') canvas.style.cursor = 'grab';
-});
 
 document.addEventListener('keyup', ev => {
   if (ev.key === 'Alt') {
     ev.preventDefault();
+    ev.stopImmediatePropagation();
     isAltDown = false;
     activeCurvePoint = null;
   }
@@ -728,6 +723,7 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
 
 
 
