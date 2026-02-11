@@ -24,20 +24,30 @@
       </div>
 
       <div class="section">
-        <div class="section-title">Image / Export</div>
-        <label class="file-label">Background Image
-          <input id="uploadImage" type="file" accept="image/*"/>
-        </label>
-        <label class="export-opt"><input id="includeImage" type="checkbox" /> Include image in full export</label>
-        <div style="display:flex;gap:6px;">
-          <button id="exportPowerBI" class="actionBtn">Export (Power BI)</button>
-          <button id="exportCSV" class="actionBtn">Export CSV</button>
-          <button id="exportFull" class="actionBtn">Export Full</button>
-        </div>
-        <div style="margin-top:6px;font-size:12px;color:#666">
-          <input id="autosave" type="checkbox" /> Auto-save project
-        </div>
-      </div>
+  <div class="section-title">Image / Export</div>
+  <label class="file-label">Background Image
+    <input id="uploadImage" type="file" accept="image/*"/>
+  </label>
+  
+  <div style="margin: 8px 0;">
+    <button id="fitBtn" class="actionBtn">Fit Image</button>
+    <button id="removeBgBtn" class="actionBtn" style="color: #d93025;">Remove Image</button>
+  </div>
+
+  <label class="export-opt">
+    <input id="includeImage" type="checkbox" /> Include image in full export
+  </label>
+
+  <div class="export-group">
+    <button id="exportPowerBI" class="actionBtn">Export (Power BI)</button>
+    <button id="exportCSV" class="actionBtn">Export CSV Mapping</button>
+    <button id="exportFull" class="actionBtn">Export Full SVG</button>
+  </div>
+
+  <div style="margin-top:10px; font-size:12px; color:var(--muted)">
+    <input id="autosave" type="checkbox" /> Auto-save project
+  </div>
+</div>
 
       <div class="section">
         <div class="section-title">Actions</div>
@@ -104,6 +114,7 @@
   <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
