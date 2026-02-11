@@ -75,3 +75,21 @@ polygon.selected, path.selected { stroke:var(--accent) !important; stroke-width:
   background-color: #f0f7ff;
   border-color: var(--accent);
 }
+
+.export-group {
+  display: flex;
+  flex-wrap: wrap; /* This forces buttons to a new line if they don't fit */
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.export-group .actionBtn {
+  flex: 1 1 calc(50% - 8px); /* Makes them sit 2-per-row nicely */
+  min-width: 120px;
+  text-align: center;
+}
+
+#exportCSV {
+  background-color: #f8fff8; /* Slight green tint so you can spot it */
+  border: 1px solid #28a745;
+}
