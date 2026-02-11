@@ -306,7 +306,7 @@ document.addEventListener('keydown', ev=>{
     if(drawing){
       if(current.points.length>0){ current.points.pop(); if(current.points.length===0) cancelCurrent(); else updateRegionElement(current); }
       removeTempLine(); removeTempCursor(); ev.preventDefault();
-    } else deselect();
+    } else deselect();}
   else if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='z'){ const s=UndoRedo.undo(); if(s) restoreState(s); }
   else if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='y'){ const s=UndoRedo.redo(); if(s) restoreState(s); }
   else if(ev.key==='Delete'){ if(selected) deleteRegion(selected.id); }
@@ -761,4 +761,5 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
 
