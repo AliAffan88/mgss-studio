@@ -703,36 +703,21 @@ function downloadSVG(svgStr,filename){
 
 // CSV Export Logic
 
-exportCSVBtn.addEventListener('click', () => {
-  // 1. Create CSV Header
-  let csvContent = "data:text/csv;charset=utf-8,Area ID,Field Name\n";
-
-  // 2. Loop through regions and add rows
-  regions.forEach(r => {
-    // Use quotes to handle names with spaces or commas
-    const row = `"${r.id}","${r.field || ''}"`;
-    csvContent += row + "\n";
+if (exportCSVBtn) {
+  exportCSVBtn.addEventListener('click', () => {
+    let csvContent = "data:text/csv;charset=utf-8,Area ID,Field Name\n";
+    regions.forEach(r => {
+      csvContent += `"${r.id}","${r.field || ''}"\n`;
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "mgss_area_mapping.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   });
-
-  // 3. Download the file
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "mgss_area_mapping.csv");
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-});
-
-  // 3. Trigger the download
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "mgss_area_names.csv");
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-});
+}
 
 // project save/load
 saveProjectBtn.addEventListener('click',()=>{ ProjectIO.exportProject(snapshotState()); });
@@ -761,5 +746,6 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
 
 
