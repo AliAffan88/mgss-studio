@@ -11,7 +11,6 @@ const selectBtn = document.getElementById('selectBtn');
 const uploadImage = document.getElementById('uploadImage');
 const includeImage = document.getElementById('includeImage');
 const exportPowerBI = document.getElementById('exportPowerBI');
-const exportCSVBtn = document.getElementById('exportCSV');
 const exportFull = document.getElementById('exportFull');
 const regionList = document.getElementById('regionList');
 const regionIDInput = document.getElementById('regionID');
@@ -779,18 +778,40 @@ function autoTrace(startX, startY) {
   }
 }
 
+// --- CSV EXPORT DEBUG VERSION ---
+const exportCSVBtn = document.getElementById('exportCSV');
+
 if (exportCSVBtn) {
-  exportCSVBtn.onclick = () => {
-    let csvContent = "data:text/csv;charset=utf-8,Area ID,Field Name\n";
-    regions.forEach(r => {
-      csvContent += `"${r.id}","${r.field || ''}"\n`;
-    });
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "mgss_area_mapping.csv");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  };
+    console.log("✅ Checkpoint 1: CSV Button found in HTML");
+
+    exportCSVBtn.onclick = () => {
+        console.log("✅ Checkpoint 2: Button clicked");
+        
+        if (regions.size === 0) {
+            alert("No regions found! Draw some shapes first.");
+            return;
+        }
+
+        let csvContent = "data:text/csv;charset=utf-8,Area ID,Field Name\n";
+        
+        regions.forEach((r, id) => {
+            console.log(`Processing region: ${id}`);
+            csvContent += `"${r.id}","${r.field || ''}"\n`;
+        });
+
+        try {
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "mgss_area_mapping.csv");
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            console.log("✅ Checkpoint 3: Download triggered");
+        } catch (err) {
+            console.error("❌ Export failed:", err);
+        }
+    };
+} else {
+    console.error("❌ Checkpoint 1 Failed: Button with ID 'exportCSV' not found!");
 }
