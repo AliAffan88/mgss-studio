@@ -53,3 +53,25 @@ polygon.selected, path.selected { stroke:var(--accent) !important; stroke-width:
 @media (max-width:1000px){
   #toolbar, #sidepanel { display:none; }
 }
+
+/* Ensure the export container allows buttons to stay side-by-side */
+.section div[style*="display:flex"] {
+  flex-wrap: wrap; /* Allows buttons to wrap if they don't fit 300px */
+  gap: 8px !important;
+}
+
+/* Style the CSV button to look like an action button */
+.actionBtn, #exportCSV {
+  flex: 1 1 auto; /* Allows buttons to grow/shrink to fit */
+  min-width: 80px;
+  font-size: 12px;
+  background-color: #fff;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+#exportCSV:hover {
+  background-color: #f0f7ff;
+  border-color: var(--accent);
+}
