@@ -12,7 +12,7 @@ const uploadImage = document.getElementById('uploadImage');
 const includeImage = document.getElementById('includeImage');
 const exportPowerBI = document.getElementById('exportPowerBI');
 const exportFull = document.getElementById('exportFull');
-const exportCSV = document.getElementById('exportCSV');
+const exportCSVBtn = document.getElementById('exportCSV');
 const regionList = document.getElementById('regionList');
 const regionIDInput = document.getElementById('regionID');
 const fillColorInput = document.getElementById('fillColor');
@@ -701,16 +701,28 @@ function downloadSVG(svgStr,filename){
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); a.remove();
 }
 
-exportCSV.addEventListener('click', () => {
-  // 1. Create the CSV Header
-  let csvContent = "data:text/csv;charset=utf-8,ID,Area Name/Field\n";
+// CSV Export Logic
 
-  // 2. Loop through all regions and add their data
+exportCSVBtn.addEventListener('click', () => {
+  // 1. Create CSV Header
+  let csvContent = "data:text/csv;charset=utf-8,Area ID,Field Name\n";
+
+  // 2. Loop through regions and add rows
   regions.forEach(r => {
-    // We wrap values in quotes to handle names that might contain commas
+    // Use quotes to handle names with spaces or commas
     const row = `"${r.id}","${r.field || ''}"`;
     csvContent += row + "\n";
   });
+
+  // 3. Download the file
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "mgss_area_mapping.csv");
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+});
 
   // 3. Trigger the download
   const encodedUri = encodeURI(csvContent);
@@ -749,3 +761,4 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
