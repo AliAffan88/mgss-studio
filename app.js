@@ -1,4 +1,4 @@
-// app.js - MGSS Studio v4 main
+// app.js - MGSS Studio v5 main
 // Full-featured version with Synoptic-compatible export
 // Depends on undoRedo.js, projectIO.js, svgExport.js
 
@@ -747,6 +747,7 @@ function projectPointToSegment(p,a,b){
   return {x:cx,y:cy,dist:distance(px,py,cx,cy)};
 }
 function distance(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+
 
 
 
