@@ -11,6 +11,7 @@ const selectBtn = document.getElementById('selectBtn');
 const uploadImage = document.getElementById('uploadImage');
 const includeImage = document.getElementById('includeImage');
 const exportPowerBI = document.getElementById('exportPowerBI');
+const exportCSVBtn = document.getElementById('exportCSV');
 const exportFull = document.getElementById('exportFull');
 const regionList = document.getElementById('regionList');
 const regionIDInput = document.getElementById('regionID');
@@ -776,4 +777,20 @@ function autoTrace(startX, startY) {
     updateRegionList();
     capture();
   }
+}
+
+if (exportCSVBtn) {
+  exportCSVBtn.onclick = () => {
+    let csvContent = "data:text/csv;charset=utf-8,Area ID,Field Name\n";
+    regions.forEach(r => {
+      csvContent += `"${r.id}","${r.field || ''}"\n`;
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "mgss_area_mapping.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
 }
