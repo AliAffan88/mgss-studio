@@ -1,4 +1,8 @@
-// app.js - MGSS Studio v6 (Hierarchical Drill-Down Edition)
+/**
+ * MGSS Studio v6 - Full Consolidated Code
+ * Features: Hierarchical Drill-Down, Undo/Redo, SVG Interaction, Panning/Zooming
+ */
+
 const regionFieldInput = document.getElementById('regionField');
 const svgNS = "http://www.w3.org/2000/svg";
 const canvas = document.getElementById('svgCanvas');
@@ -29,10 +33,6 @@ const wandThresholdInput = document.getElementById('wandThreshold');
 const thresholdValDisplay = document.getElementById('thresholdVal');
 const breadcrumbPath = document.getElementById('breadcrumb-path');
 
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 10;
-const ZOOM_STEP = 1.1; 
-
 // --- HIERARCHY STATE ---
 let currentLevel = 'root'; 
 let drillPath = [{ id: 'root', name: 'Project Root' }];
@@ -40,21 +40,11 @@ const hierarchy = new Map();
 hierarchy.set('root', new Map()); 
 
 function getActiveRegions() {
+  if (!hierarchy.has(currentLevel)) hierarchy.set(currentLevel, new Map());
   return hierarchy.get(currentLevel);
 }
 
-// --- WAND SETUP ---
-let wandCanvas = document.createElement('canvas');
-let wandCtx = wandCanvas.getContext('2d', { willReadFrequently: true });
-const wandBtn = document.getElementById('wandBtn');
-
-wandThresholdInput.oninput = () => {
-  thresholdValDisplay.textContent = wandThresholdInput.value;
-};
-
 // --- STATE VARIABLES ---
-let isAltDown = false;
-let activeCurvePoint = null;
 let viewBox = { x: 0, y: 0, w: 1000, h: 1000 };
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
@@ -63,23 +53,7 @@ let drawing = false;
 let current = null;
 let regionCounter = 1;
 let selected = null;
-let tempLine = null, tempCursor = null, edgePreviewDot = null, bgImage = null;
-let handles = [];
-let draggingHandle = null, dragOffset = [0, 0];
-
-// --- THEME ---
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('mgss_theme', theme);
-}
-(function initTheme() {
-  const savedTheme = localStorage.getItem('mgss_theme') || 'light';
-  applyTheme(savedTheme);
-})();
-themeToggle.onclick = () => {
-  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  applyTheme(next);
-};
+let tempLine = null, bgImage = null;
 
 // --- NAVIGATION & BREADCRUMBS ---
 function updateBreadcrumbs() {
@@ -102,20 +76,20 @@ function updateBreadcrumbs() {
 function drillIn(region) {
   currentLevel = region.id;
   drillPath.push({ id: region.id, name: region.id });
-  if (!hierarchy.has(currentLevel)) hierarchy.set(currentLevel, new Map());
-  deselect();
   renderLevel();
+  capture();
 }
 
 function drillUpTo(index) {
   drillPath = drillPath.slice(0, index + 1);
   currentLevel = drillPath[index].id;
   renderLevel();
+  capture();
 }
 
 function renderLevel() {
-  const bg = canvas.querySelector('#bgImage');
   canvas.innerHTML = '';
+  // Restore Background Image
   if (bgImage && bgImage.href) {
     const imgTag = document.createElementNS(svgNS, 'image');
     imgTag.id = 'bgImage';
@@ -124,115 +98,90 @@ function renderLevel() {
     imgTag.setAttribute('href', bgImage.href);
     canvas.appendChild(imgTag);
   }
-  
-  // Re-draw regions for the current level
+  // Restore Regions for this level
   getActiveRegions().forEach(r => {
     createRegionElement(r);
     attachRegionEvents(r);
   });
-  
   updateRegionList();
   updateBreadcrumbs();
-}
-
-// --- TOOLS & MODES ---
-polyBtn.onclick = () => setMode('polygon');
-bezierBtn.onclick = () => setMode('bezier');
-selectBtn.onclick = () => setMode('select');
-handBtn.onclick = () => setMode('hand');
-wandBtn.onclick = () => setMode('wand');
-
-function setMode(m) {
-  mode = m;
-  document.querySelectorAll('.modeBtn').forEach(b => b.classList.remove('active'));
-  document.getElementById(m + 'Btn')?.classList.add('active');
   deselect();
 }
 
-// --- CORE LOGIC (REFACTORED FOR HIERARCHY) ---
+// --- UNDO / REDO / SNAPSHOT ---
 function snapshotState() {
   const state = { 
     currentLevel, 
-    drillPath, 
+    drillPath: [...drillPath], 
     bg: bgImage, 
-    viewBox,
+    viewBox: { ...viewBox },
     hierarchy: [] 
   };
   hierarchy.forEach((map, parentId) => {
-    const regionsArray = [];
-    map.forEach(r => {
-      regionsArray.push({
-        id: r.id,
-        points: JSON.parse(JSON.stringify(r.points)),
-        color: r.color,
-        opacity: r.opacity,
-        field: r.field || ''
-      });
-    });
+    const regionsArray = Array.from(map.values()).map(r => ({
+      id: r.id, points: JSON.parse(JSON.stringify(r.points)),
+      color: r.color, opacity: r.opacity, field: r.field || ''
+    }));
     state.hierarchy.push({ parentId, regions: regionsArray });
   });
   return state;
 }
 
 function restoreState(obj) {
+  if (!obj) return;
   hierarchy.clear();
   obj.hierarchy.forEach(h => {
     const map = new Map();
     h.regions.forEach(r => map.set(r.id, r));
     hierarchy.set(h.parentId, map);
   });
-  currentLevel = obj.currentLevel || 'root';
-  drillPath = obj.drillPath || [{ id: 'root', name: 'Project Root' }];
-  if (obj.bg) loadBackgroundFromData(obj.bg.href, obj.bg.width, obj.bg.height);
+  currentLevel = obj.currentLevel;
+  drillPath = obj.drillPath;
+  bgImage = obj.bg;
+  viewBox = obj.viewBox;
+  updateViewBox();
   renderLevel();
 }
 
 function capture() { UndoRedo.capture(snapshotState()); }
 
-// --- MOUSE EVENTS ---
-canvas.addEventListener('mousedown', ev => {
-  if (mode === 'wand') {
-    const raw = clientToSvg(ev);
-    autoTrace(Math.round(raw.x), Math.round(raw.y));
-    return;
+// --- KEYBOARD SHORTCUTS ---
+window.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape') {
+    if (drawing) cancelCurrent();
+    else deselect();
   }
-  if (mode === 'hand' || ev.button === 1) {
-    isPanning = true;
-    panStart = { x: ev.clientX, y: ev.clientY };
-    return;
+  if ((ev.ctrlKey || ev.metaKey) && ev.key === 'z') {
+    ev.preventDefault();
+    const s = UndoRedo.undo(); if(s) restoreState(s);
   }
-  if (ev.target.classList.contains('handle')) return;
-  
-  const pt = clientToSvg(ev);
-  const snapped = getSnappedPoint(pt.x, pt.y);
+  if ((ev.ctrlKey || ev.metaKey) && ev.key === 'y') {
+    ev.preventDefault();
+    const s = UndoRedo.redo(); if(s) restoreState(s);
+  }
+});
 
+undoBtn.onclick = () => { const s = UndoRedo.undo(); if(s) restoreState(s); };
+redoBtn.onclick = () => { const s = UndoRedo.redo(); if(s) restoreState(s); };
+
+// --- MOUSE & CANVAS INTERACTION ---
+canvas.addEventListener('mousedown', ev => {
+  if (mode === 'hand' || ev.button === 1) { 
+    isPanning = true; 
+    panStart = { x: ev.clientX, y: ev.clientY }; 
+    return; 
+  }
+  const pt = clientToSvg(ev);
   if (mode === 'polygon' || mode === 'bezier') {
-    if (!drawing) { startRegion(snapped.x, snapped.y); addPoint(snapped.x, snapped.y); }
-    else addPoint(snapped.x, snapped.y);
+    if (!drawing) startRegion(pt.x, pt.y);
+    addPoint(pt.x, pt.y);
   } else if (mode === 'select') {
     const id = ev.target.id;
     if (getActiveRegions().has(id)) selectRegion(getActiveRegions().get(id));
     else deselect();
   }
 });
-uploadImage.onchange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    const img = new Image();
-    img.onload = () => {
-      // Set the global bgImage object
-      bgImage = { href: event.target.result, width: img.width, height: img.height };
-      viewBox = { x: 0, y: 0, w: img.width, h: img.height };
-      updateViewBox();
-      renderLevel(); // This will now draw the image
-      capture();
-    };
-    img.src = event.target.result;
-  };
-  reader.readAsDataURL(file);
-};
+
 canvas.addEventListener('mousemove', ev => {
   if (isPanning) {
     const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
@@ -242,31 +191,30 @@ canvas.addEventListener('mousemove', ev => {
     updateViewBox();
     return;
   }
-  const pt = clientToSvg(ev);
   if (drawing) {
-    const snapped = getSnappedPoint(pt.x, pt.y);
-    updateTempLine(snapped.x, snapped.y);
-    showTempCursor(snapped.x, snapped.y);
+    const pt = clientToSvg(ev);
+    updateTempLine(pt.x, pt.y);
   }
-  if (selected && !drawing) showEdgePreview(findClosestEdge(selected, pt.x, pt.y));
 });
 
 canvas.addEventListener('dblclick', () => { if (drawing) finalizeRegion(); });
 
 // --- REGION MANAGEMENT ---
 function startRegion(x, y) {
-  const id = generateId();
-  current = {
-    id, points: [{ x: Math.round(x), y: Math.round(y), curve: false }],
-    field: '', element: null, color: defaultColorInput.value,
-    opacity: parseFloat(defaultOpacityInput.value)
+  const id = `Area_${regionCounter++}`;
+  current = { 
+    id, 
+    points: [], 
+    color: defaultColorInput.value, 
+    opacity: parseFloat(defaultOpacityInput.value), 
+    field: '' 
   };
   createRegionElement(current);
   drawing = true;
 }
 
 function addPoint(x, y) {
-  current.points.push({ x: Math.round(x), y: Math.round(y), curve: false });
+  current.points.push({ x: Math.round(x), y: Math.round(y), curve: mode === 'bezier' });
   updateRegionElement(current);
 }
 
@@ -275,93 +223,46 @@ function finalizeRegion() {
   getActiveRegions().set(current.id, current);
   attachRegionEvents(current);
   current = null; drawing = false;
-  removeTempLine(); removeTempCursor();
-  updateRegionList(); capture();
+  removeTempLine();
+  updateRegionList(); 
+  capture();
 }
 
-function cancelCurrent() {
-  if (current?.element) current.element.remove();
-  current = null; drawing = false; removeTempLine(); removeTempCursor();
+function cancelCurrent() { 
+  if (current?.element) current.element.remove(); 
+  current = null; drawing = false; removeTempLine(); 
 }
 
-function createRegionElement(region) {
+function createRegionElement(r) {
   const el = document.createElementNS(svgNS, 'polygon');
-  el.id = region.id;
+  el.id = r.id;
   canvas.appendChild(el);
-  region.element = el;
-  updateRegionElement(region);
+  r.element = el;
+  updateRegionElement(r);
 }
 
-function updateRegionElement(region) {
-  const pts = region.points;
-  const isPath = pts.some(p => p.curve);
-  if (isPath && region.element.tagName !== 'path') {
+function updateRegionElement(r) {
+  const isPath = r.points.some(p => p.curve);
+  if (isPath && r.element.tagName !== 'path') {
     const newEl = document.createElementNS(svgNS, 'path');
-    region.element.replaceWith(newEl);
-    region.element = newEl;
+    r.element.replaceWith(newEl);
+    r.element = newEl;
   }
-  region.element.setAttribute('id', region.id);
-  region.element.setAttribute('fill', region.color);
-  region.element.setAttribute('fill-opacity', region.opacity);
-  region.element.setAttribute('stroke', 'black');
-  region.element.setAttribute('stroke-width', '1.5');
-  
-  if (isPath) {
-    region.element.setAttribute('d', createPathD(region));
-  } else {
-    region.element.setAttribute('points', pts.map(p => `${p.x},${p.y}`).join(' '));
-  }
+  r.element.setAttribute('fill', r.color);
+  r.element.setAttribute('fill-opacity', r.opacity);
+  r.element.setAttribute('stroke', 'black');
+  r.element.setAttribute('stroke-width', '1.5');
+  if (isPath) r.element.setAttribute('d', createPathD(r));
+  else r.element.setAttribute('points', r.points.map(p => `${p.x},${p.y}`).join(' '));
 }
 
-// --- EXPORT LOGIC ---
-exportPowerBI.onclick = () => {
-  const isHeatmap = document.getElementById('heatmapExportChk').checked;
-  const allItems = [];
-  
-  hierarchy.forEach((map, parentId) => {
-    const levelIdx = drillPath.findIndex(p => p.id === parentId) + 1;
-    map.forEach(r => {
-      allItems.push({
-        id: r.id,
-        tag: r.points.some(p => p.curve) ? 'path' : 'polygon',
-        attr: {
-          points: r.points.map(p => `${p.x},${p.y}`).join(' '),
-          d: createPathD(r),
-          fill: isHeatmap ? 'transparent' : r.color,
-          'fill-opacity': r.opacity,
-          'data-field': r.field || '',
-          'data-parent': parentId === 'root' ? '' : parentId,
-          'data-level': levelIdx
-        }
-      });
-    });
-  });
-
-  const svgStr = buildCleanSVGFragment(allItems, viewBox.w, viewBox.h, bgImage);
-  downloadSVG(svgStr, 'mgss_v6_drilldown.svg');
-};
-
-document.getElementById('exportCSV').onclick = () => {
-  let csv = "Level,Parent ID,Area ID,Field Name\n";
-  hierarchy.forEach((map, parentId) => {
-    const levelIdx = drillPath.findIndex(p => p.id === parentId) + 1;
-    map.forEach(r => {
-      csv += `"${levelIdx}","${parentId}","${r.id}","${r.field || ''}"\n`;
-    });
-  });
-  const blob = new Blob([csv], {type: 'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'hierarchy_mapping.csv';
-  a.click();
-};
-
-// --- HELPER FUNCTIONS ---
-function generateId() {
-  let id; do { id = `Area_${regionCounter++}` } while (document.getElementById(id));
-  return id;
+function attachRegionEvents(r) {
+  r.element.onclick = (e) => { 
+    if(mode === 'select') { e.stopPropagation(); selectRegion(r); }
+  };
 }
 
+// --- PROPERTY PANEL UPDATE ---
 function selectRegion(r) {
   deselect();
   selected = r;
@@ -370,32 +271,18 @@ function selectRegion(r) {
   regionFieldInput.value = r.field || '';
   fillColorInput.value = r.color;
   fillOpacityInput.value = r.opacity;
-  createHandles(r);
 }
 
 function deselect() {
-  if (selected) {
-    selected.element.classList.remove('selected');
-    removeHandles();
-  }
+  if (selected) selected.element.classList.remove('selected');
   selected = null;
 }
 
-function deleteRegion(id) {
-  const r = getActiveRegions().get(id);
-  if (!r) return;
-  r.element.remove();
-  getActiveRegions().delete(id);
-  deselect();
-  updateRegionList();
-  capture();
-}
-
+// --- HELPERS ---
 function clientToSvg(ev) {
   const pt = canvas.createSVGPoint();
   pt.x = ev.clientX; pt.y = ev.clientY;
-  const svgPt = pt.matrixTransform(canvas.getScreenCTM().inverse());
-  return { x: svgPt.x, y: svgPt.y };
+  return pt.matrixTransform(canvas.getScreenCTM().inverse());
 }
 
 function updateViewBox() {
@@ -403,12 +290,10 @@ function updateViewBox() {
 }
 
 function createPathD(r) {
-  const pts = r.points;
-  let d = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i = 1; i < pts.length; i++) {
-    const p = pts[i];
-    if (p.curve && p.cx != null) d += ` Q ${p.cx} ${p.cy} ${p.x} ${p.y}`;
-    else d += ` L ${p.x} ${p.y}`;
+  if (r.points.length === 0) return '';
+  let d = `M ${r.points[0].x} ${r.points[0].y}`;
+  for (let i = 1; i < r.points.length; i++) {
+    d += ` L ${r.points[i].x} ${r.points[i].y}`;
   }
   return d + ' Z';
 }
@@ -423,41 +308,88 @@ function updateRegionList() {
   });
 }
 
-// --- INITIALIZATION ---
-document.getElementById('drillInBtn').onclick = () => { if (selected) drillIn(selected); };
-document.addEventListener('mouseup', () => { isPanning = false; });
-document.getElementById('fitBtn').onclick = () => {
-  if (bgImage) { viewBox = { x:0, y:0, w: bgImage.width, h: bgImage.height }; updateViewBox(); }
+function updateTempLine(x, y) {
+  if (current.points.length === 0) return;
+  if (!tempLine) {
+    tempLine = document.createElementNS(svgNS, 'line');
+    tempLine.setAttribute('stroke', 'red');
+    tempLine.setAttribute('stroke-dasharray', '4');
+    canvas.appendChild(tempLine);
+  }
+  const last = current.points[current.points.length - 1];
+  tempLine.setAttribute('x1', last.x); tempLine.setAttribute('y1', last.y);
+  tempLine.setAttribute('x2', x); tempLine.setAttribute('y2', y);
+}
+
+function removeTempLine() { 
+  if (tempLine) { tempLine.remove(); tempLine = null; } 
+}
+
+// --- TOOLBAR CLICKS ---
+polyBtn.onclick = () => { mode = 'polygon'; setActiveBtn(polyBtn); };
+bezierBtn.onclick = () => { mode = 'bezier'; setActiveBtn(bezierBtn); };
+selectBtn.onclick = () => { mode = 'select'; setActiveBtn(selectBtn); };
+handBtn.onclick = () => { mode = 'hand'; setActiveBtn(handBtn); };
+
+function setActiveBtn(btn) {
+  document.querySelectorAll('.modeBtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// --- IMAGE UPLOAD ---
+uploadImage.onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      bgImage = { href: ev.target.result, width: img.width, height: img.height };
+      viewBox = { x: 0, y: 0, w: img.width, h: img.height };
+      updateViewBox();
+      renderLevel();
+      capture();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
 };
 
-// Load Background Helper
-function loadBackgroundFromData(href, imgW, imgH) {
-  const old = canvas.querySelector('#bgImage');
-  if (old) old.remove();
-  canvas.setAttribute('viewBox', `0 0 ${imgW} ${imgH}`);
-  const imgTag = document.createElementNS(svgNS, 'image');
-  imgTag.id = 'bgImage';
-  imgTag.setAttribute('width', imgW);
-  imgTag.setAttribute('height', imgH);
-  imgTag.setAttribute('href', href);
-  canvas.prepend(imgTag);
-  bgImage = { href, width: imgW, height: imgH };
-  viewBox = { x: 0, y: 0, w: imgW, h: imgH };
-}
+// --- PROPERTY CHANGE LISTENERS ---
+regionIDInput.onchange = () => {
+  if (!selected) return;
+  const oldId = selected.id;
+  const newId = regionIDInput.value;
+  if (getActiveRegions().has(newId)) { alert("ID already exists"); return; }
+  getActiveRegions().delete(oldId);
+  selected.id = newId;
+  selected.element.id = newId;
+  getActiveRegions().set(newId, selected);
+  updateRegionList();
+  capture();
+};
 
-// Remaining helper stubs (temp lines, handles, etc) same as V5 logic
-function removeTempLine() { tempLine?.remove(); tempLine = null; }
-function removeTempCursor() { tempCursor?.remove(); tempCursor = null; }
-function updateTempLine(x,y) { /* implementation same as v5 */ }
-function showTempCursor(x,y) { /* implementation same as v5 */ }
-function createHandles(r) { /* implementation same as v5 */ }
-function removeHandles() { handles.forEach(h => h.remove()); handles = []; }
-function getSnappedPoint(x, y) { /* implementation same as v5 using getActiveRegions() */ return {x,y}; }
-function distance(x1,y1,x2,y2) { return Math.hypot(x2-x1, y2-y1); }
-function downloadSVG(str, name) {
-  const blob = new Blob([str], {type:'image/svg+xml'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-}
+regionFieldInput.onchange = () => {
+  if (selected) { selected.field = regionFieldInput.value; capture(); }
+};
+
+fillColorInput.onchange = () => {
+  if (selected) { selected.color = fillColorInput.value; updateRegionElement(selected); capture(); }
+};
+
+fillOpacityInput.oninput = () => {
+  if (selected) { selected.opacity = parseFloat(fillOpacityInput.value); updateRegionElement(selected); }
+};
+fillOpacityInput.onchange = () => capture();
+
+// --- DRILL DOWN TRIGGER ---
+document.getElementById('drillInBtn').onclick = () => { 
+  if (selected) drillIn(selected); 
+  else alert("Please select a region first");
+};
+
+// --- INITIALIZE ---
+document.addEventListener('mouseup', () => { isPanning = false; });
+updateViewBox();
+updateBreadcrumbs();
+capture(); // Initial state capture
