@@ -116,11 +116,21 @@ function drillUpTo(index) {
 function renderLevel() {
   const bg = canvas.querySelector('#bgImage');
   canvas.innerHTML = '';
-  if (bg) canvas.appendChild(bg);
+  if (bgImage && bgImage.href) {
+    const imgTag = document.createElementNS(svgNS, 'image');
+    imgTag.id = 'bgImage';
+    imgTag.setAttribute('width', bgImage.width);
+    imgTag.setAttribute('height', bgImage.height);
+    imgTag.setAttribute('href', bgImage.href);
+    canvas.appendChild(imgTag);
+  }
+  
+  // Re-draw regions for the current level
   getActiveRegions().forEach(r => {
     createRegionElement(r);
     attachRegionEvents(r);
   });
+  
   updateRegionList();
   updateBreadcrumbs();
 }
@@ -205,7 +215,24 @@ canvas.addEventListener('mousedown', ev => {
     else deselect();
   }
 });
-
+uploadImage.onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      // Set the global bgImage object
+      bgImage = { href: event.target.result, width: img.width, height: img.height };
+      viewBox = { x: 0, y: 0, w: img.width, h: img.height };
+      updateViewBox();
+      renderLevel(); // This will now draw the image
+      capture();
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+};
 canvas.addEventListener('mousemove', ev => {
   if (isPanning) {
     const dx = (ev.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
