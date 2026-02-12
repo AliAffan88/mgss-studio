@@ -19,18 +19,24 @@ function buildCleanSVGFragment(items, width, height, imageData) {
 
   // Add all regions
   items.forEach(it => {
+    const tag = it.tag; // "polygon" or "path"
+    svg += `<${tag} id="${escapeXml(it.id)}" `;
+
+    // HIERARCHY ATTRIBUTES - Must be inside the tag string
     if (it.attr['data-parent']) svg += `data-parent="${escapeXml(it.attr['data-parent'])}" `;
     if (it.attr['data-level']) svg += `data-level="${it.attr['data-level']}" `;
     if (it.attr['data-field']) svg += `data-field="${escapeXml(it.attr['data-field'])}" `;
-    if (it.tag === "polygon") {
-      svg += `<polygon ` +
-             `id="${escapeXml(it.id)}" `;
-      svg += `points="${escapeXml(it.attr.points)}" ` +
-             `fill="${escapeXml(it.attr.fill)}" ` +
-             `fill-opacity="${it.attr["fill-opacity"]}" ` +
-             `stroke="${escapeXml(it.attr.stroke)}" ` +
-             `stroke-width="${it.attr["stroke-width"]}" />`;
+
+    if (tag === "polygon") {
+      svg += `points="${escapeXml(it.attr.points)}" `;
+    } else {
+      svg += `d="${escapeXml(it.attr.d)}" `;
     }
+
+    svg += `fill="${escapeXml(it.attr.fill)}" ` +
+           `fill-opacity="${it.attr["fill-opacity"]}" ` +
+           `stroke="black" stroke-width="1.5" />`;
+  });
 
     if (it.tag === "path") {
       svg += `<path ` +
