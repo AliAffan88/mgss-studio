@@ -124,8 +124,12 @@
       </div>
     </aside>
 
-    <main id="main">
-      <div id="canvasWrapper">
+    <main id="main" style="display: flex; flex-direction: column;">
+      <div id="breadcrumb-bar" style="background: var(--panel); padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px;">
+        <span id="breadcrumb-path">Project Root</span>
+      </div>
+  
+      <div id="canvasWrapper" style="flex: 1;">
         <svg id="svgCanvas" xmlns="http://www.w3.org/2000/svg"></svg>
       </div>
     </main>
@@ -146,6 +150,9 @@
           <div style="display:flex;gap:6px;margin-top:6px;">
             <button id="frontBtn" class="actionBtn">Bring to Front</button>
             <button id="backBtn" class="actionBtn">Send to Back</button>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <button id="drillInBtn" class="actionBtn" style="background: var(--accent); color: white;">Drill In (Create Sub-Map) ↓</button>
           </div>
           <label for="regionID">Region ID</label>
           <input id="regionID" placeholder="Auto-generated" />
