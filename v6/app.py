@@ -34,6 +34,11 @@ const lockBgChk = document.getElementById('lockBgChk');
 const wandThresholdInput = document.getElementById('wandThreshold');
 const thresholdValDisplay = document.getElementById('thresholdVal');
 
+let currentLevel = 'root'; 
+let drillPath = [{ id: 'root', name: 'Project Root' }];
+const hierarchy = new Map(); // Key: ParentID, Value: Map of regions
+hierarchy.set('root', new Map()); // Initialize root level
+
 // Update the number display when you move the slider
 wandThresholdInput.oninput = () => {
   thresholdValDisplay.textContent = wandThresholdInput.value;
@@ -72,7 +77,9 @@ let mode = 'polygon';
 let drawing = false;
 let current = null;
 let regionCounter = 1;
-const regions = new Map();
+function getActiveRegions() {
+  return hierarchy.get(currentLevel);
+};
 let selected = null;
 let tempLine = null,
   tempCursor = null,
@@ -104,7 +111,7 @@ function setMode(m) {
 function snapshotState() {
   const obj = { regions: [], bg: null, canvas: { w: canvas.clientWidth, h: canvas.clientHeight } };
   if (bgImage) obj.bg = { href: bgImage.href, width: bgImage.width, height: bgImage.height };
-  regions.forEach(r => {
+  getActiveRegions().forEach(r => {
     obj.regions.push({
       id: r.id,
       points: r.points.map(p => ({ x: p.x, y: p.y, curve: p.curve ? true : false, cx: p.cx || null, cy: p.cy || null })),
@@ -119,7 +126,7 @@ function snapshotState() {
 function restoreState(obj) {
   clearAllRegions();
   if (obj.bg) loadBackgroundFromData(obj.bg.href, obj.bg.width, obj.bg.height, false);
-  if (obj.regions) obj.regions.forEach(rr => {
+  if (obj.regions) obj.getActiveRegions().forEachh(rr => {
     const id = rr.id;
     const r = {
       id,
@@ -129,7 +136,7 @@ function restoreState(obj) {
       field: rr.field || ''
     };
     createRegionElement(r);
-    regions.set(id, r);
+    getActiveRegions().set(id, r);
     if (r.field) r.element.setAttribute('data-field', r.field);
   });
   updateRegionList();
@@ -246,7 +253,7 @@ canvas.addEventListener('mousedown', ev => {
   } else if (mode === 'select') {
     if (ev.target.tagName === 'polygon' || ev.target.tagName === 'path') {
       const id = ev.target.id;
-      if (regions.has(id)) selectRegion(regions.get(id));
+      if (regions.has(id)) selectRegion(getActiveRegions().get(id));
     } else deselect();
   }
 });
@@ -329,6 +336,63 @@ document.addEventListener('keyup', ev => {
 
 document.addEventListener('mouseup', () => { isPanning = false; canvas.style.cursor = 'default'; });
 
+function updateBreadcrumbs() {
+  const container = document.getElementById('breadcrumb-path');
+  container.innerHTML = '';
+  drillPath.forEach((step, index) => {
+    const link = document.createElement('span');
+    link.textContent = step.name;
+    link.style.cursor = index === drillPath.length - 1 ? 'default' : 'pointer';
+    link.style.color = index === drillPath.length - 1 ? 'var(--text)' : 'var(--accent)';
+    
+    if (index < drillPath.length - 1) {
+      link.onclick = () => drillUpTo(index);
+      container.appendChild(link);
+      container.appendChild(document.createTextNode(' > '));
+    } else {
+      container.appendChild(link);
+    }
+  });
+}
+
+function drillIn(region) {
+  currentLevel = region.id;
+  drillPath.push({ id: region.id, name: region.id });
+  
+  if (!hierarchy.has(currentLevel)) {
+    hierarchy.set(currentLevel, new Map());
+  }
+  
+  deselect();
+  renderLevel();
+}
+
+function drillUpTo(index) {
+  drillPath = drillPath.slice(0, index + 1);
+  currentLevel = drillPath[index].id;
+  renderLevel();
+}
+
+function renderLevel() {
+  // Clear canvas except background
+  const bg = canvas.querySelector('#bgImage');
+  canvas.innerHTML = '';
+  if (bg) canvas.appendChild(bg);
+  
+  // Draw regions of the current level
+  getActiveRegions().forEach(r => {
+    createRegionElement(r);
+    attachRegionEvents(r);
+  });
+  
+  updateRegionList();
+  updateBreadcrumbs();
+}
+
+document.getElementById('drillInBtn').onclick = () => {
+  if (selected) drillIn(selected);
+};
+
 // Helpers
 const SNAP_THRESHOLD = 10;
 function getSnappedPoint(svgX, svgY) {
@@ -337,7 +401,7 @@ function getSnappedPoint(svgX, svgY) {
   const adjustedThreshold = SNAP_THRESHOLD / currentZoom;
   let minDistance = SNAP_THRESHOLD;
 
-  regions.forEach(region => {
+  getActiveRegions().forEach(region => {
     if (drawing && current && region.id === current.id) return;
     if (selected && region.id === selected.id) return;
     region.points.forEach(p => {
@@ -412,7 +476,7 @@ function removeTempCursor() { if (tempCursor && tempCursor.parentNode) tempCurso
 function finalizeRegion() {
   if (!current) return;
   if (current.points.length < 3) { cancelCurrent(); return; }
-  regions.set(current.id, current);
+  getActiveRegions().set(current.id, current);
   attachRegionEvents(current);
   current = null;
   drawing = false;
@@ -594,7 +658,7 @@ function insertVertexAt(r, x, y) {
 canvas.addEventListener('click', ev => { if (ev.shiftKey && selected) { const { x, y } = clientToSvg(ev); insertVertexAt(selected, x, y); } });
 
 function deleteRegion(id) {
-  const r = regions.get(id);
+  const r = getActiveRegions().get(id);
   if (!r) return;
   if (r.element && r.element.parentNode) r.element.parentNode.removeChild(r.element);
   regions.delete(id);
@@ -626,13 +690,13 @@ zoomInBtn.onclick = () => { const vb = canvas.viewBox.baseVal; applyZoom(ZOOM_ST
 zoomOutBtn.onclick = () => { const vb = canvas.viewBox.baseVal; applyZoom(1 / ZOOM_STEP, vb.x + vb.width / 2, vb.y + vb.height / 2); };
 
 function clearAllRegions() {
-  regions.forEach(r => { if (r.element && r.element.parentNode) r.element.parentNode.removeChild(r.element); });
+  getActiveRegions().forEach(r => { if (r.element && r.element.parentNode) r.element.parentNode.removeChild(r.element); });
   regions.clear(); removeHandles(); selected = null;
 }
 
 function updateRegionList() {
   regionList.innerHTML = '';
-  regions.forEach(r => {
+  getActiveRegions().forEach(r => {
     const li = document.createElement('li');
     li.textContent = r.id; li.onclick = () => selectRegion(r);
     regionList.appendChild(li);
@@ -656,7 +720,7 @@ regionIDInput.addEventListener('input', () => {
   if (!selected) return;
   const newId = regionIDInput.value.trim();
   if (!newId || (regions.has(newId) && newId !== selected.id)) return;
-  const oldId = selected.id; regions.delete(oldId); selected.id = newId; regions.set(newId, selected);
+  const oldId = selected.id; regions.delete(oldId); selected.id = newId; getActiveRegions().set(newId, selected);
   selected.element.setAttribute('id', newId); updateRegionList(); capture();
 });
 
@@ -771,7 +835,7 @@ function autoTrace(startX, startY) {
       opacity: parseFloat(defaultOpacityInput.value), field: ''
     };
     createRegionElement(newRegion);
-    regions.set(id, newRegion);
+    getActiveRegions().set(id, newRegion);
     attachRegionEvents(newRegion);
     updateRegionList();
     capture();
@@ -794,7 +858,7 @@ if (exportCSVBtn) {
 
         let csvContent = "data:text/csv;charset=utf-8,Area ID,Field Name\n";
         
-        regions.forEach((r, id) => {
+        getActiveRegions().forEach((r, id) => {
             console.log(`Processing region: ${id}`);
             csvContent += `"${r.id}","${r.field || ''}"\n`;
         });
