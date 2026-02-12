@@ -19,7 +19,12 @@ function buildCleanSVGFragment(items, width, height, imageData) {
 
   // Add all regions
   items.forEach(it => {
-
+    if (it.attr['data-parent']) {
+      svg += `data-parent="${escapeXml(it.attr['data-parent'])}" `;
+    }
+    if (it.attr['data-level']) {
+      svg += `data-level="${escapeXml(it.attr['data-level'])}" `;
+    }
     if (it.tag === "polygon") {
       svg += `<polygon ` +
              `id="${escapeXml(it.id)}" `;
