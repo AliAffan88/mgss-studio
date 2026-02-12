@@ -19,20 +19,12 @@ function buildCleanSVGFragment(items, width, height, imageData) {
 
   // Add all regions
   items.forEach(it => {
-    if (it.attr['data-parent']) {
-      svg += `data-parent="${escapeXml(it.attr['data-parent'])}" `;
-    }
-    if (it.attr['data-level']) {
-      svg += `data-level="${escapeXml(it.attr['data-level'])}" `;
-    }
+    if (it.attr['data-parent']) svg += `data-parent="${escapeXml(it.attr['data-parent'])}" `;
+    if (it.attr['data-level']) svg += `data-level="${it.attr['data-level']}" `;
+    if (it.attr['data-field']) svg += `data-field="${escapeXml(it.attr['data-field'])}" `;
     if (it.tag === "polygon") {
       svg += `<polygon ` +
              `id="${escapeXml(it.id)}" `;
-
-      if (it.attr['data-field']) {
-        svg += `data-field="${escapeXml(it.attr['data-field'])}" `;
-      }
-
       svg += `points="${escapeXml(it.attr.points)}" ` +
              `fill="${escapeXml(it.attr.fill)}" ` +
              `fill-opacity="${it.attr["fill-opacity"]}" ` +
