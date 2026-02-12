@@ -737,6 +737,8 @@ exportPowerBI.onclick = () => {
       'data-field': r.field || '',
       stroke: 'black', 
       'stroke-width': '1.5'
+      'data-parent': currentLevel === 'root' ? '' : currentLevel,
+      'data-level': drillPath.length - 1
     }
   })), canvas.viewBox.baseVal.width, canvas.viewBox.baseVal.height, bgImage);
   downloadSVG(svgStr, isHeatmap ? 'map_heatmap_ready.svg' : 'map_colored.svg');
@@ -856,8 +858,12 @@ if (exportCSVBtn) {
             return;
         }
 
-        let csvContent = "data:text/csv;charset=utf-8,Area ID,Field Name\n";
-        
+        let csvContent = "data:text/csv;charset=utf-8,Level,Parent ID,Area ID,Field Name\n";
+        hierarchy.forEach((map, parentId) => {
+        map.forEach((r, id) => {
+            csvContent += `"${r.level || 0}","${parentId}","${r.id}","${r.field || ''}"\n`;
+          });
+        });
         getActiveRegions().forEach((r, id) => {
             console.log(`Processing region: ${id}`);
             csvContent += `"${r.id}","${r.field || ''}"\n`;
@@ -867,7 +873,7 @@ if (exportCSVBtn) {
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "mgss_area_mapping.csv");
+            link.setAttribute("download", "mgss_hierarchy_mapping.csv");
             document.body.appendChild(link);
             link.click();
             link.remove();
